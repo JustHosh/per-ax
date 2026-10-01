@@ -8,6 +8,14 @@ __pycache__/
 .riot_api_key.txt
 *.key
 *.token
+.env
+.env.local
+settings.local.json
+
+# Datos de partidas del recolector (match-v5): pueden pesar cientos de MB
+*.sqlite
+*.sqlite3
+*.db
 
 # Local cache + scratch
 cache/
