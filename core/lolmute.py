@@ -26,8 +26,9 @@ for _s in ("stdout", "stderr"):
 
 import smiteconfig as cfg
 import lolimport as limp                     # its _lcu_json is the shared, proven LCU caller
+import smitepaths as sp
 
-_LOG = os.path.expanduser("~/.claude/smiteless_mute.log")
+_LOG = sp.log("quiet.log")
 
 SETTINGS_PATH = "/lol-game-settings/v1/game-settings"
 # Every client setting that makes the game quieter, all verified writable on this client.

@@ -24,6 +24,7 @@ for _d in ("core", "ui", "tools"):            # cross-folder flat imports
 import lolbuild as lb
 import lolgame as lg
 import lolugg as ugg              # u.gg match-history fallback (Riot Match-V5 fails often)
+import smitepaths as sp
 
 try:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -32,12 +33,12 @@ except Exception:
 
 REGIONAL = "americas"      # match-v5 + account-v1 (regional routing)
 PLATFORM = "na1"           # summoner-v4 + league-v4 (platform routing)
-CACHE = os.path.expanduser("~/.claude/cache/riot")
+CACHE = sp.cache("riot")
 IDS_TTL = 600          # re-pull a player's match-id list at most every 10 min
 RANK_TTL = 1800        # re-pull a player's rank at most every 30 min
 MASTERY_ALL_TTL = 12 * 3600     # a whole account's mastery barely moves -> cache half a day
 FAM_TTL = 6 * 3600              # rebuild the cross-account familiarity pool at most every 6h
-ACCOUNTS_FILE = os.path.expanduser("~/.claude/smiteless_accounts.json")   # your main + smurfs
+ACCOUNTS_FILE = sp.data("my_accounts.json")   # your main + smurfs
 FAM_FILE = os.path.join(CACHE, "familiarity_pts.json")                    # pooled mastery POINTS cache
 KEYOK_TTL = 300        # cache a key's validity ~5 min so each scout doesn't re-ping Riot
 _CALLS = []            # sliding-window call timestamps for rate limiting

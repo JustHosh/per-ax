@@ -14,9 +14,10 @@ champ select / seen in-game.
 """
 import os, json, base64, time, string, urllib.error
 import lolbuild as lb  # reuse http(), ROLE, LOCKFILES, UA
+import smitepaths as sp
 
 ROLE = lb.ROLE
-ROLECACHE = os.path.expanduser("~/.claude/cache/lolrole.json")
+ROLECACHE = sp.cache("lolrole.json")
 
 
 def _lockfile():

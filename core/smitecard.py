@@ -24,6 +24,7 @@ import lolfix as lf          # THE ONE FIX: the leak board's copy + pricing
 import lolpool as lpl       # THE POOL: your champions, priced in the same LP
 import phasecheck
 import smiteconfig as cfg
+import smitepaths as sp
 import smiteskin as skin
 
 # Phases where the overlay's session is still alive. Anything else (Lobby, None, EndOfGame…)
@@ -127,7 +128,7 @@ def archetype(dd, cid):
     return ""
 W = 920; ROWH = 66; TOP = 96
 PW = 1150               # the profile window renders WIDER than the board (landscape home page)
-ICONCACHE = os.path.expanduser("~/.claude/cache/icons")
+ICONCACHE = sp.cache("icons")
 _FONTS = {}
 _ICONS = {}   # (cid, size) -> resized RGBA Image; avoids re-reading/resizing every repaint
 _SPLASH = {}      # (cid, (w,h)) -> cropped RGB splash art
@@ -3184,7 +3185,7 @@ def info_image(msg):
 
 # ---------- the QUEUE card: the overlay opens WITH the queue, not after it ----------
 QUEUE_PHASES = ("Matchmaking", "ReadyCheck")
-_OVLOG = os.path.expanduser("~/.claude/smiteless_overlay.log")
+_OVLOG = sp.log("overlay.log")
 
 
 def _ovlog(msg):
@@ -3789,7 +3790,7 @@ def main():
     wait = "--wait" in argv          # auto-open: don't draw anything until champs are present
     if wait:
         argv.remove("--wait")
-    outp = _takeflag(argv, "--out") or os.path.expanduser("~/.claude/cache/smitecard.png")
+    outp = _takeflag(argv, "--out") or sp.cache("smitecard.png")
     fm = _takeflag(argv, "--fm")
     try:
         count = int(_takeflag(argv, "--count"))      # None -> use the saved scout-depth setting

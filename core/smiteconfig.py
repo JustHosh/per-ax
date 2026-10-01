@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """smiteconfig.py - tiny shared settings store for Smiteless.
 
-Settings live in ~/.claude/smiteless_settings.json (gank/scout tuning, read live by the
+Settings live in %APPDATA%\\Smiteless\\settings.json (smitepaths; read live by the
 overlay and edited by smitesettings.py). Auto-open is a marker file (so it can be toggled
 without parsing JSON), and "start with Windows" is a registry Run key.
 """
 import os, sys, json
+import smitepaths as sp
 
-PATH = os.path.expanduser("~/.claude/smiteless_settings.json")
+PATH = sp.data("settings.json")
 
 
 # ---------- tie every surface's lifetime to the tray (no orphan windows on force-close) ----------
@@ -59,8 +60,8 @@ def watch_tray(root, interval=700):
         root.after(interval, tick)
     except Exception:
         pass
-NOAUTO = os.path.expanduser("~/.claude/smiteless_noautoopen")   # presence = auto-open OFF
-NOHOME = os.path.expanduser("~/.claude/smiteless_nohomeonstart")  # presence = open profile/home at startup OFF
+NOAUTO = sp.data("noautoopen")      # presence = auto-open OFF (the AHK trays read it too)
+NOHOME = sp.data("nohomeonstart")   # presence = open profile/home at startup OFF
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 # streak_influence: 0..100, 50 = the original/default behavior (a multiplier m = value/50

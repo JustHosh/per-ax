@@ -13,6 +13,7 @@ Usage:
 Roles: top jungle mid adc support
 """
 import sys, os, json, time, ssl, urllib.request
+import smitepaths as sp
 
 try:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -20,7 +21,7 @@ except Exception:
     pass
 
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36"
-CACHE = os.path.expanduser("~/.claude/cache/ddragon")
+CACHE = sp.cache("ddragon")
 LOCKFILES = [
     r"F:\Riot Games\League of Legends\lockfile",
     r"C:\Riot Games\League of Legends\lockfile",
@@ -116,7 +117,7 @@ def ddragon():
     return dd
 
 # ---------- op.gg ----------
-OPGG_CACHE = os.path.expanduser("~/.claude/cache/opgg")
+OPGG_CACHE = sp.cache("opgg")
 OPGG_TTL = 6 * 3600        # op.gg champ data only shifts patch-to-patch; 6h keeps champ select snappy
 def opgg(cid, role, tier=None):
     """op.gg champ data, disk-cached per (champ, role, tier) for OPGG_TTL. On a network

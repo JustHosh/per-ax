@@ -20,9 +20,10 @@ for _d in ("core", "ui", "tools"):            # cross-folder flat imports
     sys.path.insert(0, os.path.join(_ROOT, _d))
 import lolbuild as lb
 import claudecli as cc         # logged-in claude CLI (fallback path only)
+import smitepaths as sp
 
-CACHE = os.path.expanduser("~/.claude/cache/matchups")
-CS_CACHE = os.path.expanduser("~/.claude/cache/counterstats")
+CACHE = sp.cache("matchups")
+CS_CACHE = sp.cache("counterstats")
 CS_HDRS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
 # our role names -> the site's data-lane tokens
 CS_LANE = {"top": "top", "jungle": "jungle", "jg": "jungle", "mid": "mid", "middle": "mid",

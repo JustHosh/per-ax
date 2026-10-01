@@ -7,7 +7,7 @@ snapshots that whole login state per account and swaps it back in on demand - th
 approach as TcNo-Acc-Switcher / RiotSwitcher. Password login through the client's local
 API has been dead since Riot added captcha, so session-swapping is THE way this is done.
 Snapshots are DPAPI-encrypted (CryptProtectData, user-scoped): the blobs in
-~/.claude/smiteless_accounts are unreadable to anything but this Windows user.
+%APPDATA%\\Smiteless\\accounts are unreadable to anything but this Windows user.
 
 Setup is once per account: log in with "Stay signed in" TICKED, then "Save current login".
 "Log in" then: refuses if a game is running, closes the Riot/League clients (gracefully,
@@ -16,13 +16,14 @@ so the stored blob would go stale otherwise), swaps the files, and relaunches Le
 """
 import os, sys, io, json, time, ctypes, shutil, zipfile, subprocess
 from ctypes import wintypes
+import smitepaths as sp
 
 _LOCAL = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~/AppData/Local")
 RC_ROOT = os.path.join(_LOCAL, "Riot Games", "Riot Client")
 DATA_DIR = os.path.join(RC_ROOT, "Data")
 CONFIG_YAML = os.path.join(RC_ROOT, "Config", "RiotClientSettings.yaml")
 INSTALLS = r"C:\ProgramData\Riot Games\RiotClientInstalls.json"
-STORE = os.path.expanduser("~/.claude/smiteless_accounts")
+STORE = sp.data("accounts")
 INDEX = os.path.join(STORE, "index.json")
 
 # What must die before the swap (TcNo's list + the League client + crash handlers).

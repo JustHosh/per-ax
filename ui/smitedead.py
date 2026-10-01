@@ -29,12 +29,13 @@ import lolbuild as lb
 import loldead as ld
 import phasecheck
 import smiteconfig as cfg
+import smitepaths as sp
 import smiteskin as skin
 from smiteoverlay import target_monitor, make_no_activate, toplevel_hwnd, monitors, monitor_of, client_rect
 
 _user32 = ctypes.windll.user32
 _CREATE_NO_WINDOW = 0x08000000
-_MON_CACHE = os.path.expanduser("~/.claude/smiteless_gamemon.json")
+_MON_CACHE = sp.data("game_monitor.json")
 
 
 def _game_process_monitor():

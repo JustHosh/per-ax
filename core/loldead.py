@@ -11,8 +11,8 @@ Everything here is READ-ONLY off the live-client feed (:2999) - no input automat
 control (that needs simulating input into the game and is bannable; not happening). brief()
 returns None unless the active player is dead right now, so the overlay only shows on death.
 """
-import os
 import time
+import smitepaths as sp
 
 import loltempo as lt
 import lollive as ll
@@ -22,7 +22,7 @@ import loltags as ltag
 import lolout as lo
 
 FEED_WINDOW = 40          # seconds of history for "what you missed"
-_DEAD_LOG = os.path.expanduser("~/.claude/smiteless_dead.log")
+_DEAD_LOG = sp.log("dead.log")
 
 
 def _dlog(msg):

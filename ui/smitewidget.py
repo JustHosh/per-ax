@@ -19,6 +19,7 @@ for _s in ("stdout", "stderr"):                # pythonw / bundled exe: no conso
         except Exception:
             pass
 import lolbuild as lb
+import smitepaths as sp
 import lolitems as li
 import lollive as ll
 import lolreentry as lre
@@ -287,7 +288,7 @@ class _TempoVoice:
         return _tempo_phrase(*key)
 
 
-_QLOG = os.path.expanduser("~/.claude/cache/smiteless_widget.log")
+_QLOG = sp.log("widget.log")
 
 
 def _qlog(reason):
@@ -344,7 +345,7 @@ def _dragon_due(prev, secs, fired):
         return None
     fired.update(crossed)
     return min(crossed)
-POS_FILE = os.path.join(os.path.expanduser("~"), ".claude", "smiteless_widget_pos.json")
+POS_FILE = sp.data("widget_pos.json")
 
 
 # ---- in-game click-through ----

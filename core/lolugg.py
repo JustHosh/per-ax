@@ -17,10 +17,11 @@ Endpoint + response shape verified live against u.gg's public GraphQL API
 (POST https://u.gg/api) — see docs / the getPlayerMatchSummaries operation.
 """
 import os, json, time, urllib.request, urllib.error
+import smitepaths as sp
 
 API = "https://u.gg/api"
 REGION_DEFAULT = "na1"
-CACHE = os.path.expanduser("~/.claude/cache/ugg")
+CACHE = sp.cache("ugg")
 TTL = 600                      # cache a player's pull ~10 min (matches Riot's ids-list TTL)
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36"
 

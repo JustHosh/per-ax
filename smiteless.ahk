@@ -26,7 +26,8 @@ SCRIPTS := A_ScriptDir          ; the .py files live in core/ ui/ tools/ under t
 ; holds this mutex; this makes the AHK tray hold it too.)
 DllCall("CreateMutexW", "Ptr", 0, "Int", 0, "WStr", "Global\SmitelessTray")
 
-NOAUTO := EnvGet("USERPROFILE") "\.claude\smiteless_noautoopen"   ; present = auto-open OFF
+DATADIR := EnvGet("APPDATA") "\Smiteless"                ; = core\smitepaths.py DATA_DIR
+NOAUTO := DATADIR "\noautoopen"                          ; present = auto-open OFF
 
 if FileExist(SCRIPTS "\assets\smiteless.ico")
     TraySetIcon(SCRIPTS "\assets\smiteless.ico")
@@ -80,7 +81,7 @@ OpenNotes() {
 }
 
 ; --- "Riot login" submenu: one item per saved account session (managed in Settings). ---
-ACCIDX := EnvGet("USERPROFILE") "\.claude\smiteless_accounts\index.json"
+ACCIDX := DATADIR "\accounts\index.json"
 g_loginSig := "?"
 BuildLoginMenu() {
     global loginMenu, ACCIDX, g_loginSig

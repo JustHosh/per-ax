@@ -18,6 +18,7 @@ import lolgame as lg
 import lolbuild as lb
 import loltags as ltag
 import lolscout as ls
+import smitepaths as sp
 
 _ROLE = {"TOP": "TOP", "JUNGLE": "JG", "MIDDLE": "MID", "MID": "MID", "BOTTOM": "BOT",
          "BOT": "BOT", "UTILITY": "SUP", "SUPPORT": "SUP"}
@@ -356,7 +357,7 @@ def brief(dd, key=None, scout=True, on_progress=None):
 # every surface came back half-scouted. Now the FIRST caller builds it and everyone else reads
 # that build: a disk snapshot keyed by the lobby (so a new game never sees the old one) plus an
 # exclusive build lock, because these are separate PROCESSES — an in-memory cache can't help.
-SNAP_FILE = os.path.expanduser("~/.claude/cache/scout_snapshot.json")
+SNAP_FILE = sp.cache("scout_snapshot.json")
 SNAP_LOCK = SNAP_FILE + ".lock"
 SNAP_TTL = 45 * 60          # a lobby's accounts don't change mid-game
 LOCK_STALE = 120            # a builder holding the lock longer than this is presumed dead

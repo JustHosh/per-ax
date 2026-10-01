@@ -30,6 +30,7 @@ for _s in ("stdout", "stderr"):                # pythonw / bundled exe: no conso
             pass
 import smitecard as sc
 import smiteconfig as cfg
+import smitepaths as sp
 
 import smiteskin as skin
 BG = skin.VOID   # matches smitecard's background so there's no border seam
@@ -101,7 +102,7 @@ def show_no_activate(hwnd, topmost=True):
         pass
 
 
-POS_FILE = os.path.expanduser("~/.claude/smiteless_board_pos.json")
+POS_FILE = sp.data("board_pos.json")
 
 
 def load_board_pos():

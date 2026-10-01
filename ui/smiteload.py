@@ -28,6 +28,7 @@ import lolbuild as lb
 import lolload as ll
 import lolgame as lg
 import smiteconfig as cfg
+import smitepaths as sp
 import smiteskin as skin
 # reuse the death overlay's window plumbing + drawing helpers (one source of truth)
 from smitedead import (_wfont, _dfont, _wrap, _card, _make_click_through, game_monitor,
@@ -497,7 +498,7 @@ def _single_instance():
     return ctypes.get_last_error() != 183
 
 
-_LOG = os.path.expanduser("~/.claude/smiteless_load.log")
+_LOG = sp.log("load.log")
 
 
 def _log(msg):

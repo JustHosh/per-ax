@@ -53,9 +53,10 @@ for _d in ("core", "ui", "tools"):
         sys.path.insert(0, os.path.join(_R, _d))
 
 import lolqueue as lq                  # ONE BRAIN for "is this split proven?" (lq._z_worse)
+import smitepaths as sp
 
-LEDGER = os.path.expanduser("~/.claude/cache/riot/behavior_ledger.json")
-LP_HISTORY = os.path.expanduser("~/.claude/cache/lol_lp_history.json")
+LEDGER = sp.LEDGER_FILE
+LP_HISTORY = sp.LP_HISTORY_FILE
 
 # ---- the catalogue ----------------------------------------------------------------
 # ONE BRAIN for leak identity: lolprofile derives its _BEHAVIOR_TAGS labels from here, so a

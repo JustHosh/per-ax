@@ -17,6 +17,7 @@ import lollocal as llc          # YOUR match history straight off the client (Ri
 import lolfix as lf             # THE ONE FIX: the leak catalogue + the LP pricing engine
 import lolpool as lpl           # THE POOL: your champions, priced in the same LP
 import phasecheck
+import smitepaths as sp
 
 _ctx = ssl._create_unverified_context()
 
@@ -24,7 +25,7 @@ _ctx = ssl._create_unverified_context()
 _TIER_ORDER = ["IRON", "BRONZE", "SILVER", "GOLD", "PLATINUM", "EMERALD", "DIAMOND",
                "MASTER", "GRANDMASTER", "CHALLENGER"]
 _DIV_VAL = {"IV": 0, "III": 1, "II": 2, "I": 3, "": 3}
-LP_HISTORY = os.path.expanduser("~/.claude/cache/lol_lp_history.json")
+LP_HISTORY = sp.LP_HISTORY_FILE
 SESSION_GAP = 3 * 3600       # a >3h break starts a new "session"
 TILT_STREAK = 2              # stop-rule threshold: research (100k Gold games, loltheory) shows
                              # breaking 30min after 2 straight losses wins ~3% more next game
@@ -137,7 +138,7 @@ def _champ_rating(g, w, avg=None):
 # The one thing the League client was ever needed for here is telling us WHO you are.
 # Remember that answer, and the whole profile works with the client closed - everything
 # else (rank, matches, grades) is pure Riot Web API.
-_RID_FILE = os.path.expanduser("~/.claude/smiteless_last_riot_id.txt")
+_RID_FILE = sp.data("last_riot_id.txt")
 
 
 def _remember_rid(rid):
@@ -531,7 +532,7 @@ def timeline_review(dd, mid, my_puuid, key, parts):
 
 
 # ---------- BEHAVIORAL review: root-cause tags with next-rep tracking ----------
-_BEHAVIOR_FILE = os.path.join(ls.CACHE, "behavior_ledger.json")
+_BEHAVIOR_FILE = sp.LEDGER_FILE
 # ONE BRAIN for leak identity: the labels come from lolfix's catalogue, which also owns each
 # leak's imperative fix and the live guard that answers it. A habit can never be called one
 # thing in this game's review and another on THE ONE FIX board.

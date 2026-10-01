@@ -16,8 +16,9 @@
 
 APP := A_ScriptDir "\app\SmitelessApp.exe"
 ICO := A_ScriptDir "\assets\smiteless.ico"
-NOAUTO := EnvGet("USERPROFILE") "\.claude\smiteless_noautoopen"   ; present = auto-open OFF
-NOHOME := EnvGet("USERPROFILE") "\.claude\smiteless_nohomeonstart" ; present = open profile/home at startup OFF
+DATADIR := EnvGet("APPDATA") "\Smiteless"                ; = core\smitepaths.py DATA_DIR
+NOAUTO := DATADIR "\noautoopen"                          ; present = auto-open OFF
+NOHOME := DATADIR "\nohomeonstart"                       ; present = open profile/home at startup OFF
 UPDATED_MARK := A_ScriptDir "\.updated_version"
 ; GitHub repo ("owner/name") whose Releases this copy updates from. EMPTY = updates OFF:
 ; nothing is checked, downloaded or run. Must match REPO in tools\smiteupdate.py.
@@ -56,8 +57,8 @@ Launch(cmd) {
 }
 
 ; --- "Riot login" submenu: one item per saved account session (managed in Settings). ---
-; Rebuilt from ~\.claude\smiteless_accounts\index.json on a timer, only when it changes.
-ACCIDX := EnvGet("USERPROFILE") "\.claude\smiteless_accounts\index.json"
+; Rebuilt from <DATADIR>\accounts\index.json on a timer, only when it changes.
+ACCIDX := DATADIR "\accounts\index.json"
 g_loginSig := "?"
 BuildLoginMenu() {
     global loginMenu, ACCIDX, g_loginSig

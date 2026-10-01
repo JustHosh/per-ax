@@ -32,10 +32,11 @@ vetoed at all — lolpool reads a main on a bad run as variance, which is what i
 import json
 import os
 import time
+import smitepaths as sp
 
 import lolprofile as lp
 
-CACHE = os.path.expanduser("~/.claude/cache/lol_fit.json")
+CACHE = sp.cache("lol_fit.json")
 TTL = 6 * 3600             # rebuild the season read at most this often (it's ~60 match fetches)
 
 PERF_MIN = 3               # games before your average PERFORMANCE on a champ may speak

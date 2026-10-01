@@ -28,19 +28,20 @@ import lolbuild as lb
 import lolgame as lg
 import phasecheck
 import smiteconfig as cfg
+import smitepaths as sp
 
 # One publisher per process; champ select ending resets it for the next lobby.
 _ST = {"thread": None, "draft_id": "", "posted": False, "opened": False, "last_pub": "",
        "sugg": {}, "sugg_key": {}, "stop": False}
 _LOCK = threading.Lock()
 
-_LOG = os.path.expanduser("~/.claude/smiteless_draft.log")
+_LOG = sp.log("draft.log")
 
 
 def _dlog(msg):
     """The publisher had NO logging, so every 'it didn't swap' was a guess. Now every
     lifecycle step (spawn, publish, champ-select end, scout-phase iteration, PATCH result,
-    retire) leaves a line in ~/.claude/smiteless_draft.log — the swap can't fail silently."""
+    retire) leaves a line in logs\\draft.log — the swap can't fail silently."""
     try:
         with open(_LOG, "a", encoding="utf-8") as f:
             f.write(f"{time.strftime('%m-%d %H:%M:%S')} [{_ST.get('draft_id','')[:6]}] {msg}\n")

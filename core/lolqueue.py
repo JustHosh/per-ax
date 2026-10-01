@@ -22,6 +22,7 @@ Sources, in order: the League client's own match history (keyless, never rate-li
 then lolprofile's behavior ledger on disk (so the call still works with the client shut).
 """
 import os, json, time, datetime
+import smitepaths as sp
 
 SESSION_GAP = 3 * 3600        # a >3h break starts a new sitting (matches lolprofile)
 REQUEUE_GAP = 10 * 60         # "straight back in" = queued inside 10 min of the last game
@@ -38,8 +39,8 @@ _INSTRUCTION = {"streak": ("STOP", "LOG OFF WITH THE LP"),
                 "clock": ("STOP", "NOT YOUR WINDOW"),
                 "requeue": ("WAIT", "TAKE TEN FIRST")}
 
-_LOG = os.path.expanduser("~/.claude/smiteless_queue.log")
-_LEDGER = os.path.expanduser("~/.claude/cache/riot/behavior_ledger.json")
+_LOG = sp.log("queue.log")
+_LEDGER = sp.LEDGER_FILE
 
 
 def log(msg):

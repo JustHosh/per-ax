@@ -105,7 +105,8 @@ def static_fixtures():
 
 def live_fixture():
     """Reconstruct the real NA1_5604429522 Brand row from the cached matches, if present."""
-    d = os.path.expanduser("~/.claude/cache/riot/match")
+    import smitepaths as sp
+    d = sp.cache("riot", "match")
     target = os.path.join(d, "NA1_5604429522.json")
     if not os.path.exists(target):
         print("\nLIVE fixture: NA1_5604429522 not in the match cache here - skipped.")
