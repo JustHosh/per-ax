@@ -748,8 +748,6 @@ def _render_body(dd, rec, pulse, recall, dead=None, W=318, ref=False, reentry=No
         urgent = None
         if gk2:
             urgent = (f"◎ gank {gk2['lane'].lower()} — {gk2['champ']} {gk2['lvl']} vs {gk2['vs_lvl']}", C_GOOD)
-        elif jg2 and jg2.get("state") == "nosign":
-            urgent = (f"⌖ {jg2['champ']} NO SIGN {jg2['idle']}s — respect the gank", C_BAD)
         elif jg2 and jg2.get("state") == "dead":
             r2 = jg2.get("respawn") or 0
             urgent = (f"⌖ {jg2['champ']} DEAD{f' — back {r2}s' if r2 else ''} · free map", C_GOOD)
@@ -792,12 +790,9 @@ def _render_body(dd, rec, pulse, recall, dead=None, W=318, ref=False, reentry=No
             rows.append(("⌖", f"{jg['champ']} DEAD{f' — back {r}s' if r else ''} · free map", C_GOOD, 1))
         elif s == "seen":
             rows.append(("⌖", f"{jg['champ']} seen {str(jg['side']).upper()} · {jg['what']} {jg['ago']}s ago", C_ARC, 1))
-        elif s == "nosign":
-            rows.append(("⌖", f"{jg['champ']} NO SIGN {jg['idle']}s — respect the gank", C_BAD, 1))
-        elif s == "moving":
-            rows.append(("⌖", f"{jg['champ']} on the move ({jg.get('idle', 0)}s quiet)", C_EMBER, 0))
-        elif s == "farming":
-            rows.append(("⌖", f"{jg['champ']} farm registered", C_MUTED, 0))
+        elif s == "stale":
+            rows.append(("⌖", f"{jg['champ']} last seen {str(jg['side']).upper()} · {jg['ago']}s ago",
+                         C_MUTED, 0))
     gk = pulse.get("gank")
     if gk:
         rows.append(("◎", f"gank {gk['lane'].lower()} — {gk['champ']} {gk['lvl']} vs {gk['vs_lvl']}", C_GOOD, 1))

@@ -19,7 +19,8 @@ WHAT IT DOES
 While the clock is under 14:00 and you are alive, it answers one question off live data
 only: can they kill you right this second?
   - your health, as a percentage of your own maximum   (activePlayer.championStats)
-  - is the enemy jungler accounted for?                (ONE BRAIN: lollive.JgTracker)
+  - is the enemy jungler accounted for?                (ONE BRAIN: lollive.JgTracker -
+                                                         kill feed + death timer only)
   - is your lane opponent alive, and how far up on you (levels) is he?
   - how many deaths have you already taken before 14:00?
 
@@ -82,8 +83,10 @@ def _evidence():
 
 
 def _threat(ctx):
-    """(is_someone_able_to_collect, why) from facts the live client can prove. No claim
-    without evidence: an unknown jungler is not a threat, it's an unknown."""
+    """(is_someone_able_to_collect, why) from facts the game has SHOWN you. The jungler counts
+    as accounted for only when he's dead or the kill feed just put him on another side of the
+    map; alive and not freshly seen is 'unaccounted' — the same read you'd make yourself,
+    with nothing inferred about where he is in the fog. No tracker at all = no claim."""
     jg = ctx.get("jg") or {}
     state, champ = jg.get("state"), jg.get("champ") or "their jungler"
     lvl_up = int(ctx.get("opp_lvl_up") or 0)
@@ -94,11 +97,10 @@ def _threat(ctx):
         return False, None            # nobody in lane to hold you there -> no collapse
     if state == "seen" and (jg.get("side") or "") == ctx.get("my_side"):
         return True, f"{champ} was just {jg.get('side')}"
-    if state == "nosign":
-        return True, f"{champ} unaccounted {int(jg.get('idle') or 0)}s"
-    if state == "moving":
-        return True, f"{champ} off camps {int(jg.get('idle') or 0)}s"
-    return False, None                # dead / farming / seen elsewhere / no read at all
+    if state in ("stale", "unknown"):
+        idle = jg.get("idle")
+        return True, (f"{champ} not seen for {int(idle)}s" if idle else f"{champ} not seen yet")
+    return False, None                # dead / seen elsewhere / no read at all
 
 
 def _verdict(ctx):
@@ -202,7 +204,7 @@ class Guard:
 # ---- fixtures for tools/selftest.py: each must land on exactly one outcome ----
 def demo(kind):
     base = {"hp": 0.30, "deaths": 0, "role": "mid", "my_side": "mid",
-            "jg": {"state": "nosign", "champ": "Kha'Zix", "idle": 58},
+            "jg": {"state": "stale", "champ": "Kha'Zix", "side": "top", "idle": 58},
             "opp_champ": "Ahri", "opp_alive": True, "opp_lvl_up": 0}
     if kind == "bleed":                   # low, and nobody knows where their jungler is
         pass
@@ -215,14 +217,17 @@ def demo(kind):
     elif kind == "accounted":             # low, but their jungler is dead and the laner is up
         base.update(jg={"state": "dead", "champ": "Kha'Zix"})
     elif kind == "alone":                 # low, jungler unknown, but the laner is dead
-        base.update(opp_alive=False, jg={"state": "moving", "champ": "Kha'Zix", "idle": 20})
+        base.update(opp_alive=False, jg={"state": "unknown", "champ": "Kha'Zix", "idle": None})
+    elif kind == "elsewhere":             # low, but the kill feed just put him on the other side
+        base.update(jg={"state": "seen", "champ": "Kha'Zix", "side": "bot", "ago": 9})
     elif kind == "noread":                # low, and we simply have no jungler read: say nothing
         base.update(jg=None)
     return base
 
 
 if __name__ == "__main__":                # python lolbleed.py — print every branch
-    for k in ("bleed", "dive", "banked", "healthy", "accounted", "alone", "noread"):
+    for k in ("bleed", "dive", "banked", "healthy", "accounted", "alone", "elsewhere",
+              "noread"):
         c = _verdict(demo(k))
         if c:
             print(f"{k:10} {c['line']}\n           {c['sub']}")

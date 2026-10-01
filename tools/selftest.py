@@ -134,14 +134,15 @@ def c_bleed():
     visible without playing a game."""
     import lolbleed as lbl
     want = {"bleed": "BLEED", "dive": "BLEED", "banked": "BLEED",
-            "healthy": None, "accounted": None, "alone": None, "noread": None}
+            "healthy": None, "accounted": None, "alone": None, "elsewhere": None,
+            "noread": None}
     got = {k: (lbl._verdict(lbl.demo(k)) or {}).get("verdict") for k in want}
     bad = [f"{k}: got {v}, want {want[k]}" for k, v in got.items() if v != want[k]]
     if bad:
         return FAIL, "; ".join(bad)
     if lbl.WINDOW != 14 * 60.0:
         return FAIL, f"window is {lbl.WINDOW}s — it must match the early_bleeding tag's 14:00"
-    return OK, "3 warning + 4 silent fixtures each land where they should"
+    return OK, "3 warning + 5 silent fixtures each land where they should"
 
 
 def c_closer():
@@ -920,6 +921,47 @@ def c_frozen():
     return OK, f"all {len(mods)} core/ + ui/ modules are frozen into the build"
 
 
+def c_jungle():
+    """The enemy-jungler tracker may only claim what the game SHOWED the player (kill feed,
+    objective announcements, the scoreboard's death timer). Reading his CS ticks to call
+    'farming' / 'no sign' is turning hidden activity into a position read - gone, and this
+    guard drives a fake game to prove a CS tick alone moves nothing."""
+    import lollive as ll
+
+    def player(name, team, pos, cs=0, dead=False, respawn=0.0):
+        return {"riotId": f"{name}#T", "summonerName": name, "team": team, "position": pos,
+                "championName": "Khazix" if pos == "JUNGLE" and team == "CHAOS" else "Ahri",
+                "scores": {"creepScore": cs, "kills": 0, "deaths": 0, "assists": 0},
+                "isDead": dead, "respawnTimer": respawn, "level": 3, "summonerSpells": {}}
+
+    def payload(gt, cs, events=(), dead=False):
+        return {"gameData": {"gameTime": gt}, "activePlayer": {"riotId": "Me#T"},
+                "allPlayers": [player("Me", "ORDER", "MIDDLE"),
+                               player("Bot", "ORDER", "BOTTOM"),
+                               player("Jg", "CHAOS", "JUNGLE", cs=cs, dead=dead,
+                                      respawn=(20.0 if dead else 0.0))],
+                "events": {"Events": list(events)}}
+
+    dd = {"id2name": {121: "Kha'Zix"}, "name2id": {"khazix": 121}, "norm": lambda x: x.lower()}
+    t = ll.JgTracker()
+    states = [t.update(dd, payload(gt, cs))["state"] for gt, cs in ((90, 0), (120, 4), (150, 9))]
+    if states != ["unknown"] * 3:
+        return FAIL, f"CS ticks moved the tracker ({states}) - hidden activity became a read"
+    kill = {"EventName": "ChampionKill", "EventTime": 160.0, "KillerName": "Jg",
+            "VictimName": "Bot", "Assisters": []}
+    st = t.update(dd, payload(170, 9, [kill]))
+    if (st["state"], st["side"]) != ("seen", "botside"):
+        return FAIL, f"a kill-feed sighting did not register: {st['state']} {st['side']}"
+    if t.update(dd, payload(230, 14, [kill]))["state"] != "stale":
+        return FAIL, "a 70s-old sighting must read as stale, not live"
+    if t.update(dd, payload(240, 14, [kill], dead=True))["state"] != "dead":
+        return FAIL, "the scoreboard's death timer must read as dead"
+    for gone in ("SIGN_WINDOW", "WARN_AFTER"):
+        if hasattr(ll.JgTracker, gone):
+            return FAIL, f"JgTracker.{gone} is back - the CS-based 'no sign' read returned"
+    return OK, "kill feed + death timer only; CS ticks change nothing"
+
+
 def c_quiet():
     """IN-GAME QUIET writes League's own chat/ping settings over the LCU and reads them back.
     It used to also TYPE `/fullmute all` into the game with synthetic keystrokes; that input
@@ -1107,6 +1149,7 @@ def main():
         ("THE ONE FIX (leak board)", c_onefix),
         ("THE POOL (champions in LP)", c_pool),
         ("Frozen build (hidden imports)", c_frozen),
+        ("Jungle tracker (shown info only)", c_jungle),
         ("In-game quiet (settings only)", c_quiet),
         ("No input injection (reads only)", c_noinput),
         ("Personal fit (your results)", c_fit),

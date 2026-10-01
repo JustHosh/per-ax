@@ -10,7 +10,6 @@ Three reads off a single /liveclientdata/allgamedata fetch:
 
 All timings are Season-16 (2026) defaults and live at the top so they're trivial to dial in.
 """
-import os
 import lolbuild as lb
 import lolgame as lg
 
@@ -388,17 +387,16 @@ def jungle_read(dd, data):
 
 class JgTracker:
     """Stateful enemy-jungler tracker: gives a definite state EVERY tick, not just when an
-    event happens. Knowledge sources, all fog-safe to claim:
-      - events (kills/objectives/towers)     -> SEEN <side>
-      - their death + respawnTimer           -> DEAD, back in Xs
-      - creepScore ticking up                -> farm registered (if the API vision-gates enemy
-        CS, a tick also implies they were just seen - either way: benign)
-      - CS frozen while alive, no events     -> NO SIGN for Xs (in fog / on the move) - the
-        actionable 'respect the gank' state, valid whether or not CS leaks through fog.
-    Identity is sticky for the whole game; a gameTime reset (new game) clears it."""
+    event happens. It only claims what the game already SHOWED the player:
+      - kill feed / objective announcements    -> SEEN <side> (fresh) or STALE (older)
+      - their death + respawn timer (scoreboard) -> DEAD, back in Xs
+    Nothing is inferred about where they are in the fog. (An earlier version read the enemy
+    jungler's CS ticks to call 'farming' vs 'no sign / on the move'; turning hidden activity
+    into a position read is what third-party trackers must not do, so it is gone.)
+    States: dead / seen / stale (seen before, no longer fresh) / unknown (no sighting, or
+    the last one is too old to mean anything). Identity is sticky for the whole game; a
+    gameTime reset (new game) clears it."""
     SEEN_FRESH = 25        # an event this recent is a live sighting
-    SIGN_WINDOW = 35       # a cs tick within this = 'farm registered'
-    WARN_AFTER = 45        # alive + nothing for this long -> warning state
 
     def __init__(self):
         self.reset()
@@ -407,8 +405,6 @@ class JgTracker:
         self.gname = None
         self.champ = "?"
         self.last_gt = 0.0
-        self.cs = None
-        self.cs_gt = None          # game-time of the last observed cs increase
         self.seen = None           # newest (event_gt, side, what)
         self.dead = False
         self.respawn = 0
@@ -435,11 +431,6 @@ class JgTracker:
                                                jg.get("championName", "?"))
         if jg is None:
             return self._status(gt)
-        cs = int((jg.get("scores") or {}).get("creepScore", 0) or 0)
-        if self.cs is None or cs > self.cs:
-            if self.cs is not None:
-                _jg_callog(gt, cs)                # calibration: does enemy CS move in fog?
-            self.cs, self.cs_gt = cs, gt
         self.dead = bool(jg.get("isDead"))
         self.respawn = int(float(jg.get("respawnTimer") or 0))
         if self.was_dead and not self.dead:       # just respawned: they're AT BASE, a known spot
@@ -456,45 +447,18 @@ class JgTracker:
         last_side = self.seen[1] if (self.seen and self.seen[1] != "dead") else None
         last_ago = int(gt - self.seen[0]) if self.seen else None
         out = {"champ": self.champ, "state": "unknown", "side": None, "what": None,
-               "ago": None, "idle": None, "respawn": 0,
+               "ago": None, "idle": last_ago, "respawn": 0,      # idle = s since last sighting
                "last_side": last_side, "last_ago": last_ago,
                # legacy fields so older render paths keep working
                "stale": True, "enemy_team": ""}
         if self.dead:
             out.update(state="dead", respawn=self.respawn)
             return out
-        if self.seen and gt - self.seen[0] <= self.SEEN_FRESH and self.seen[1] != "dead":
-            out.update(state="seen", side=self.seen[1], what=self.seen[2],
-                       ago=int(gt - self.seen[0]), stale=False)
-            return out
-        acts = [x for x in (self.cs_gt, self.seen[0] if self.seen else None) if x is not None]
-        if not acts:
-            return out
-        idle = int(gt - max(acts))
-        out["idle"] = idle
-        if self.cs_gt is not None and gt - self.cs_gt <= self.SIGN_WINDOW:
-            out["state"] = "farming"
-        elif idle >= self.WARN_AFTER:
-            out["state"] = "nosign"
-        else:
-            out["state"] = "moving"
+        if last_side and last_ago is not None and last_ago <= JG_STALE:
+            fresh = last_ago <= self.SEEN_FRESH
+            out.update(state="seen" if fresh else "stale", side=last_side, what=self.seen[2],
+                       ago=last_ago, stale=not fresh)
         return out
-
-
-_CALLOG = os.path.expanduser("~/.claude/cache/smiteless_jgcal.jsonl")
-
-
-def _jg_callog(gt, cs):
-    """Log enemy-jungler cs ticks so we can find out empirically whether the live API
-    vision-gates enemy CS (smooth camp-sized ticks = it leaks; big bursts after gaps = it
-    syncs on sight). Tiny, capped, local-only."""
-    try:
-        if os.path.exists(_CALLOG) and os.path.getsize(_CALLOG) > 256 * 1024:
-            os.remove(_CALLOG)
-        with open(_CALLOG, "a", encoding="utf-8") as f:
-            f.write('{"gt": %.1f, "cs": %d}\n' % (gt, cs))
-    except Exception:
-        pass
 
 
 _TRACKER = JgTracker()
