@@ -1126,6 +1126,277 @@ def c_runes():
     return OK, "switches only on a clear comp, cites op.gg's own sample, ignores thin pages"
 
 
+def _hdrs(**kv):
+    import email.message
+    m = email.message.Message()
+    for k, v in kv.items():
+        m[k.replace("_", "-")] = v
+    return m
+
+
+def fixture_game(legend_ids, nonlegend):
+    """A ranked game shaped like match-v5's match + timeline payloads, with every item-replay
+    case the extractor must get right: a component purchase, an undone purchase, a sale taken
+    back, a real sale, and a legendary bought into the same slot after a sale."""
+    A, B, C, D, E = legend_ids
+    lanes = ("TOP", "JUNGLE", "MIDDLE", "BOTTOM", "UTILITY")
+    parts = [{"participantId": pid, "teamId": 100 if pid <= 5 else 200, "championId": 100 + pid,
+              "teamPosition": lanes[(pid - 1) % 5], "win": pid <= 5,
+              "physicalDamageDealtToChampions": 9000 + pid, "magicDamageDealtToChampions": 4000,
+              "trueDamageDealtToChampions": 500, "puuid": f"secret-{pid}",
+              "riotIdGameName": f"Player{pid}"} for pid in range(1, 11)]
+    match = {"metadata": {"matchId": "LA1_1"},
+             "info": {"queueId": 420, "gameDuration": 1800, "gameVersion": "16.19.712.1",
+                      "gameStartTimestamp": 1_700_000_000_000, "participants": parts}}
+    frames = [{"timestamp": m * 60000, "events": [],
+               "participantFrames": {str(pid): {"totalGold": 500 + m * 300 + (40 * m if pid == 1 else 0),
+                                                "level": min(18, 1 + m // 2) + (1 if pid == 1 and m >= 8 else 0)}
+                                     for pid in range(1, 11)}} for m in range(31)]
+
+    def ev(ms, typ, pid, **kw):
+        frames[ms // 60000]["events"].append(dict(type=typ, timestamp=ms, participantId=pid, **kw))
+    ev(30000, "ITEM_PURCHASED", 1, itemId=nonlegend)
+    ev(510000, "ITEM_PURCHASED", 1, itemId=A)               # 8:30 1st legendary
+    ev(540000, "ITEM_PURCHASED", 6, itemId=B)               # 9:00 the lane opponent's 1st
+    ev(720000, "ITEM_PURCHASED", 1, itemId=C)               # 12:00 bought...
+    ev(725000, "ITEM_UNDO", 1, beforeId=C, afterId=0)       # ...and taken back
+    ev(730000, "ITEM_PURCHASED", 1, itemId=D)               # 12:10 the real 2nd
+    ev(1200000, "ITEM_SOLD", 1, itemId=A)                   # 20:00 sold...
+    ev(1230000, "ITEM_UNDO", 1, beforeId=0, afterId=A)      # ...sale taken back
+    ev(1260000, "ITEM_SOLD", 1, itemId=A)                   # 21:00 sold for real
+    ev(1290000, "ITEM_PURCHASED", 1, itemId=E)              # 21:30 into the freed slot
+    return match, {"info": {"frames": frames}}
+
+
+def c_collector():
+    """The match-v5 collector, offline: the rate limiter must follow Riot's headers (a dev key
+    bans for hours if you ignore them), the client must survive 429/403/404 and stop on a dead
+    key, and one game must turn into exactly the rows the recommender learns from - with
+    nothing that identifies the players in it."""
+    import urllib.error
+    import collector as col
+    import lolbuild as lb
+    import lolrecommend as lr
+    t, slept = [0.0], []
+
+    def sleep(s):
+        slept.append(s)
+        t[0] += s
+    lim = col.RateLimiter(clock=lambda: t[0], sleep=sleep)
+    for _ in range(18):                                   # 90% of the dev key's 20/s
+        lim.acquire("m")
+    if slept:
+        return FAIL, f"limiter slept before the per-second cap: {slept}"
+    lim.acquire("m")
+    if not slept or not 0.9 <= slept[0] <= 1.2:
+        return FAIL, f"19th request in a second waited {slept} (want ~1s)"
+    lim.update("m", _hdrs(X_App_Rate_Limit="500:10,30000:600",
+                          X_App_Rate_Limit_Count="60:10,60:600",
+                          X_Method_Rate_Limit="2000:10", X_Method_Rate_Limit_Count="3:10"))
+    if set(lim.app) != {10, 600} or lim.app[10].limit != 500 or len(lim.app[10].q) < 60:
+        return FAIL, "a production key's reported limits did not replace the assumed ones"
+    if lim.methods["m"][10].limit != 2000:
+        return FAIL, "method limits from the headers were ignored"
+
+    class Resp:
+        def __init__(self, body):
+            self.body, self.headers = body, _hdrs()
+
+        def read(self):
+            return self.body
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+    def riot(script):
+        def opener(req, timeout=None):
+            r = script.pop(0)
+            if isinstance(r, Exception):
+                raise r
+            return r
+        quiet = col.RateLimiter(clock=lambda: t[0], sleep=sleep)
+        return col.Riot("RGAPI-test", "la1", "americas", limiter=quiet, opener=opener)
+
+    err = lambda code, **h: urllib.error.HTTPError("u", code, "x", _hdrs(**h), None)
+    slept.clear()
+    if riot([err(429, Retry_After="3"), Resp(b'{"ok": 1}')]).get("h", "/p", "m") != {"ok": 1} \
+            or 3.0 not in slept:
+        return FAIL, "a 429 must wait Retry-After and retry"
+    if riot([err(404)]).get("h", "/p", "m") is not None:
+        return FAIL, "a 404 must read as 'nothing here', not an error"
+    if riot([err(403), Resp(b'[1]')]).get("h", "/p", "m") != [1]:
+        return FAIL, "a single 403 must be retried, not treated as a dead key"
+    for script in ([err(401)], [err(403), err(403), err(403)]):
+        try:
+            riot(script).get("h", "/p", "m")
+            return FAIL, "a rejected key must stop the crawl (KeyRejected)"
+        except col.KeyRejected:
+            pass
+
+    dd = lb.ddragon()
+    legend = lr.legendary_ids(dd)
+    A, B, C, D, E = sorted(legend)[:5]
+    match, tl = fixture_game((A, B, C, D, E), 1055)
+    ex = col.extract(match, tl, legend)
+    got = [(r["pid"], r["seq"], r["slot"], r["item"], r["prev"], r["opp_items"])
+           for r in ex["decisions"]]
+    want = [(1, 1, 1, A, "", ""), (6, 1, 1, B, "", str(A)), (1, 2, 2, D, str(A), str(B)),
+            (1, 3, 2, E, str(D), str(B))]
+    if got != want:
+        return FAIL, f"item replay wrong: {got} != {want}"
+    first = ex["decisions"][0]
+    if (first["gold_diff"], first["level_diff"], first["opp"], first["role"]) != (320, 1, 106, "top"):
+        return FAIL, f"context at the purchase wrong: {first}"
+    if len(first["enemies"].split(",")) != 5 or first["win"] != 1:
+        return FAIL, "enemy comp / result missing from a decision row"
+    blob = json.dumps(ex)
+    if "secret-" in blob or "Player" in blob:
+        return FAIL, "a stored row carries a player's PUUID or name"
+    for bad, why in ((dict(queueId=440), "flex"), (dict(gameDuration=240), "remake")):
+        m2 = json.loads(json.dumps(match))
+        m2["info"].update(bad)
+        try:
+            col.extract(m2, tl, legend)
+            return FAIL, f"a {why} game was not skipped"
+        except col.Skip:
+            pass
+    import tempfile
+    path = os.path.join(tempfile.mkdtemp(), "m.sqlite")
+    con = lr.open_db(path, write=True)
+    col.store(con, ex)
+    col.store(con, ex)                                    # re-storing a game must not duplicate
+    n = con.execute("SELECT COUNT(*) FROM decisions").fetchone()[0]
+    st = con.execute("SELECT status FROM matches").fetchall()
+    con.close()
+    if n != 4 or st != [("done",)]:
+        return FAIL, f"store() wrote {n} decisions / {st}"
+
+    class FakeRiot:                                       # the whole crawl loop, no network
+        calls = 0
+
+        def ladder(self, tier, division, page):
+            return [{"puuid": f"seed{i}"} for i in range(3)] if page == 1 else []
+
+        def match_ids(self, puuid, start_time):
+            return [f"LA1_{puuid}_{j}" for j in range(2)] + ["LA1_shared"]
+
+        def match(self, mid):
+            m = json.loads(json.dumps(match))
+            m["metadata"]["matchId"] = mid
+            if mid.endswith("_1"):
+                m["info"]["gameDuration"] = 200            # a remake: skipped, never fetched
+            return m
+
+        def timeline(self, mid):
+            if mid.endswith("_1"):
+                raise AssertionError("fetched the timeline of a game precheck rejects")
+            return tl
+    # 3 seeds x [own_0, own_1, one game they all share] = 7 distinct games; the three "_1"
+    # games are remakes -> 4 stored, 3 skipped (on a fresh file).
+    con = lr.open_db(os.path.join(os.path.dirname(path), "crawl.sqlite"), write=True)
+    stored = col.crawl(con, FakeRiot(), legend, ["EMERALD"], ["I"], max_pages=2,
+                       log=lambda *a: None)
+    st = dict(con.execute("SELECT status, COUNT(*) FROM matches GROUP BY status").fetchall())
+    seeds = con.execute("SELECT COUNT(ids_at) FROM seeds").fetchone()[0]
+    con.close()
+    if (stored, st.get("done"), st.get("skipped"), seeds) != (4, 4, 3, 3):
+        return FAIL, f"crawl loop: stored {stored}, statuses {st}, seeds read {seeds}"
+    return OK, ("limits follow Riot's headers, 429/403/404/401 handled, item replay exact, "
+                "no PUUIDs, crawl loop resumable")
+
+
+def c_itemrec():
+    """The next-item recommender on a synthetic database with known answers: the enemy damage
+    profile and the lane opponent must flip the pick the way the numbers say, thin data must
+    stay silent (and leave op.gg's path in charge), and the widget line must cite the evidence."""
+    import tempfile
+    import lolbuild as lb
+    import lolrecommend as lr
+    import lolitems as li
+    dd = lb.ddragon()
+    A, B, C = sorted(lr.legendary_ids(dd))[:3]
+    X = sorted(lr.legendary_ids(dd))[-1]
+    path = os.path.join(tempfile.mkdtemp(), "rec.sqlite")
+    con = lr.open_db(path, write=True)
+    for i in range(20):                                   # damage profiles: 1 = AD, 2 = AP
+        con.execute("INSERT INTO participants (match_id, pid, champ, phys, magic, patch) "
+                    "VALUES (?, 1, 1, 30000, 2000, '16.19'), (?, 2, 2, 2000, 30000, '16.19')",
+                    (f"P{i}", f"P{i}"))
+    AP, AD = "1,2,2,2,2", "1,1,1,1,2"
+    rows, k = [], [0]
+
+    def add(champ, enemies, opp, item, games, wins, patch="16.19"):
+        for j in range(games):
+            k[0] += 1
+            rows.append((f"M{k[0]}", 1, 1, 1, champ, "mid", opp, enemies, item,
+                         1 if j < wins else 0, patch))
+    add(900, AP, 555, A, 200, 130)
+    add(900, AP, 555, B, 200, 90)
+    add(900, AD, 444, A, 200, 90)
+    add(900, AD, 444, B, 200, 130)
+    add(900, AP, 777, A, 60, 24)
+    add(900, AP, 777, B, 60, 51)
+    add(900, AP, 555, C, 5, 5)                            # five games: never a candidate
+    add(901, AP, 555, A, 50, 40)                          # a champion we barely have
+    con.executemany("INSERT INTO decisions (match_id, pid, seq, slot, champ, role, opp, enemies, "
+                    "item, win, patch) VALUES (?,?,?,?,?,?,?,?,?,?,?)", rows)
+    con.commit()
+    con.close()
+    lr.reset_cache()
+    ask = lambda champ, enemies, opp=None, owned=(): [
+        r.item for r in lr.recommend_next(dd, champ, "mid", opp=opp, owned=owned, db_path=path,
+                                          enemies=[int(x) for x in enemies.split(",")])]
+    bad = []
+    if ask(900, AP, 555)[:1] != [A]:
+        bad.append(f"vs AP comps want {A}, got {ask(900, AP, 555)}")
+    if ask(900, AD)[:1] != [B]:
+        bad.append(f"vs AD comps want {B}, got {ask(900, AD)}")
+    if ask(900, AP, 777)[:1] != [B]:
+        bad.append(f"the lane opponent's own record must win: want {B}, got {ask(900, AP, 777)}")
+    if C in ask(900, AP, 555):
+        bad.append("a 5-game item was offered")
+    if ask(901, AP):
+        bad.append("a thin champion must stay silent")
+    if ask(900, AP, 555, owned=(A,)):
+        bad.append("slot 2 has no data, so owning a legendary must silence it")
+    if bad:
+        return FAIL, "; ".join(bad)
+    con = lr.open_db(path, write=True)
+    con.executemany("INSERT INTO decisions (match_id, pid, seq, slot, champ, role, item, win, "
+                    "patch) VALUES (?, 1, 1, 1, 5, 'top', ?, 1, ?)",
+                    [("W1", A, "16.18"), ("W2", A, "16.9")])
+    con.commit()
+    con.close()
+    lr.reset_cache()
+    if lr._data(path).weights() != {"16.19": 1.0, "16.18": 0.5, "16.9": 0.25}:
+        return FAIL, f"patch weights wrong: {lr._data(path).weights()}"
+
+    st = {"my_cid": 900, "my_role": "middle", "my_items": set(), "my_gold": 0, "my_lead": 0,
+          "threat": "AP", "main": None, "primary": None, "healers_detail": [], "e_ad": 0,
+          "e_ap": 0, "opp_cid": 555, "enemy_cids": [1, 2, 2, 2, 2]}
+    real_pool, real_db = li.champ_pool, lr.DB_PATH
+    li.champ_pool = lambda *a, **k: {"core": [X, A], "seq": [X, A], "boots": [], "cats": {},
+                                     "play": {}}
+    try:
+        lr.DB_PATH = path
+        lr.reset_cache()
+        with_data = li.recommend(dd, st=st)["lines"][0][1]
+        lr.DB_PATH = os.path.join(os.path.dirname(path), "missing.sqlite")
+        lr.reset_cache()
+        without = li.recommend(dd, st=st)["lines"][0][1]
+    finally:
+        li.champ_pool, lr.DB_PATH = real_pool, real_db
+        lr.reset_cache()
+    if not with_data.startswith(f"▸ {li._short(dd, A)}") or "games" not in with_data:
+        return FAIL, f"the widget line did not lead with the data pick + evidence: {with_data!r}"
+    if not without.startswith(f"▸ {li._short(dd, X)}"):
+        return FAIL, f"without data the widget must keep op.gg's path: {without!r}"
+    return OK, "damage profile + lane opponent flip the pick; thin data stays silent; widget cites it"
+
+
 def c_maxelo():
     """CLIMB MODE arms a list of setting keys by name. A typo there is invisible - the switch
     would look armed and quietly leave a feature off - so every key must be a real toggle."""
@@ -1209,6 +1480,8 @@ def main():
         ("No input injection (reads only)", c_noinput),
         ("Personal fit (your results)", c_fit),
         ("Adaptive runes (comp-aware)", c_runes),
+        ("Match collector (match-v5)", c_collector),
+        ("Item recommender (own data)", c_itemrec),
         ("Climb mode (one-switch arming)", c_maxelo),
         ("No champ-select autopilot", c_noautopilot),
         ("League client / LCU", c_lcu),

@@ -10,6 +10,7 @@ Primera versión de nuestro fork, basado en Smiteless v0.9.72 de bobbyroylee (li
 - **El jungla enemigo solo aparece cuando el juego te lo mostró:** "seen BOTSIDE · kill 9s ago", "last seen TOPSIDE · 70s ago" o "DEAD — back 22s". Se acabó la alarma roja "NO SIGN" constante.
 - **Silencio en partida sin teclado:** oculta los chats y silencia el audio de pings desde los ajustes del propio cliente; ya no escribe /fullmute all.
 - **Instalador:** "Start with Windows" es una casilla, y es el mismo ajuste que ves en Ajustes → STARTUP.
+- **Objetos con datos propios (nuevo):** con partidas recolectadas (tools\collector.py), el widget elige tu siguiente legendario según tu rival de línea y el daño del equipo enemigo, y muestra la evidencia: "56% in 412 games vs AP comps". Sin datos suficientes sigue la ruta de op.gg.
 
 **Quitado por las políticas de Riot**
 - Auto-accept de la cola, auto-ban (y su lista de perma-bans), auto-lock del campeón y swaps automáticos de rol y de orden de pick.

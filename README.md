@@ -90,6 +90,34 @@ Nunca la pongas en un archivo versionado. La clave de desarrollo caduca cada 24 
 límites bajos: alcanza para uso personal. Para distribuir la app hay que registrarla en Riot y
 pedir una clave de producción.
 
+## Datos propios: recolector y recomendador de objetos
+
+El widget puede elegir tu **siguiente legendario** con partidas reales de LAN en vez de solo
+la build promedio de op.gg: según tu campeón, tu rival de línea y si el equipo enemigo pega
+físico, mixto o mágico. Para eso primero hay que juntar partidas:
+
+```
+python tools\collector.py crawl --tier EMERALD --division I II --max-matches 2000
+python tools\collector.py status
+python core\lolrecommend.py Ahri mid --vs Zed --enemies "Zed,Lee Sin,Jinx,Thresh,Darius"
+```
+
+- Lee la liga que elijas (league-v4), el historial ranked reciente de esos jugadores y cada
+  partida con su timeline (match-v5). Por cada legendario terminado guarda el contexto: slot,
+  minuto, qué tenían ya tú, tu rival y el equipo enemigo, y la diferencia de oro/nivel.
+- No guarda nombres ni PUUIDs de los jugadores de esas partidas.
+- Respeta los límites que Riot manda en sus headers; con una clave de desarrollo son unas
+  1,300 partidas por hora como máximo. Si la clave caduca, se detiene: pega una nueva y vuelve
+  a correr el mismo comando (continúa donde se quedó; `Ctrl+C` también es seguro).
+- Todo va a `%APPDATA%\Smiteless\matches.sqlite`. `purge --keep-patches 3` borra parches
+  viejos.
+
+El recomendador (fase 1) usa winrates condicionales con suavizado bayesiano: campeón + rol +
+slot, luego + perfil de daño enemigo, luego + tu rival exacto, cada nivel encogido hacia el
+anterior; los parches recientes pesan más. Necesita al menos 150 compras de tu campeón y rol en
+ese slot; con menos se queda callado y el widget usa la ruta de op.gg. Cuando habla, la línea
+de objetos lo dice: *"▸ Shadowflame → Rabadon · 56% in 412 games vs AP comps"*.
+
 ## Dónde guarda cosas
 
 Todo vive en `%APPDATA%\Smiteless`: `settings.json`, tu historial (behavior ledger y LP),
@@ -115,8 +143,8 @@ No hagas `git merge upstream/main`: reintroduciría lo que quitamos.
 
 1. ~~Repo propio, updater apagado, región LAN, carpeta propia, quitar automatizaciones.~~
 2. Renombrar la app (nombre, icono, ventanas, instalador).
-3. Recolector de partidas match-v5 de LAN y recomendador de objetos con datos propios
-   (fase 1: winrates condicionales con suavizado bayesiano).
+3. ~~Recolector de partidas match-v5 y recomendador de objetos con datos propios (fase 1).~~
+   Falta juntar unas decenas de miles de partidas de tu elo.
 4. Traducción al español.
 5. Recomendador fase 2 (modelo) y rutas de jungla recomendadas antes de la partida.
 

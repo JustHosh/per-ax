@@ -27,6 +27,10 @@ respuestas en español; la interfaz de la app sigue en inglés hasta la traducci
   repo ni en `~/.claude`. Los trays AHK escriben la misma carpeta a mano.
 - `core/smiteconfig.py`: ajustes, `REGIONS` y `region()` / `routing()` (LAN por defecto).
 - Clave de Riot: `lolscout.read_key()` / `save_key()` (RIOT_API_KEY > `.env` > archivo).
+- Datos propios: `tools/collector.py` (CLI, match-v5 -> `%APPDATA%\Smiteless\matches.sqlite`) y
+  `core/lolrecommend.py` (esquema + recomendador fase 1). `lolitems.data_pick()` es el único
+  punto donde el widget lo consulta. Nunca guardar nombres ni PUUIDs de los jugadores de esas
+  partidas (el check "Match collector" lo vigila).
 - Updater: `REPO` en `tools/smiteupdate.py` y `UPDATE_REPO` en `dist/tray.ahk`. Vacíos =
   apagado. Solo se apuntan a un repo propio con releases que lleven `SmitelessSetup.exe`.
 - Módulo nuevo en `core/` o `ui/`: agrégalo a `$hidden` en `dist/build.ps1` (el selftest falla

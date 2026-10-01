@@ -5,6 +5,10 @@ The build path and the situational items come straight from op.gg for YOUR champ
 (the same source as the build card), so they're always champ-correct. The live game then
 drives them: your owned items advance the "next item", and the enemy's ACTUAL built damage
 + who's fed decide which defensive piece to surface. Everything updates as the game evolves.
+
+When our own match data can speak (core/lolrecommend: games gathered by tools/collector.py),
+the NEXT item comes from it instead - picked for your lane opponent and the enemy damage
+profile, with its evidence on the line - and op.gg's path fills in the rest.
 """
 import time
 import lolbuild as lb
@@ -163,6 +167,9 @@ def live_state(dd, data=_UNSET):
     my_lead = int(msc.get("kills", 0)) - int(msc.get("deaths", 0))
     myteam = me.get("team")
     enemies = [p for p in players if p.get("team") != myteam]
+    my_pos = (me.get("position") or "").upper()
+    opp = next((p for p in enemies if my_pos and (p.get("position") or "").upper() == my_pos), None)
+    cid_of = lambda p: dd["name2id"].get(dd["norm"](p.get("championName", ""))) or 0
     elist = []                                            # per-enemy threat profile
     healers, heal_items, cc = [], False, 0
     for p in enemies:
@@ -223,6 +230,8 @@ def live_state(dd, data=_UNSET):
     healers_detail = [{"name": e["name"], "lead": e["lead"], "heavy": e["heavy"]} for e in healers_alive]
     return {"my_cid": my_cid, "my_role": (me.get("position") or "").lower(), "my_items": my_items,
             "my_gold": my_gold, "my_lead": my_lead, "threat": threat,
+            "opp_cid": cid_of(opp) if opp else 0,
+            "enemy_cids": [c for c in (cid_of(p) for p in enemies) if c],
             "healers_detail": healers_detail,
             "e_ad": int(sum(e["dmg"] for e in elist if e["dtype"] == "AD")),
             "e_ap": int(sum(e["dmg"] for e in elist if e["dtype"] == "AP")),
@@ -315,6 +324,25 @@ def _recipe_owned_value(dd, iid, owned, _depth=0):
     return val
 
 
+def data_pick(dd, st, role):
+    """The next legendary according to our own match data (core/lolrecommend), as a Rec - or
+    None when that data can't speak (no database yet, champ/role/slot too thin), in which case
+    op.gg's path decides. ONE BRAIN: the progression line and the recall advice both ask this."""
+    try:
+        import lolrecommend as lrec
+        recs = lrec.recommend_next(dd, st.get("my_cid"), lb.ROLE.get(role or "", role),
+                                   opp=st.get("opp_cid") or None,
+                                   enemies=st.get("enemy_cids") or (),
+                                   owned=st.get("my_items") or ())
+        return recs[0] if recs else None
+    except Exception:
+        return None
+
+
+def _role(dd, st):
+    return st.get("my_role") or primary_role(dd, st["my_cid"])  # Live Client often omits position
+
+
 def recall_advice(dd, data=_UNSET):
     """Power-spike / back timing: your next core item, what it costs to FINISH given the
     components you already hold, and whether to back now or wait a touch for the spike. Returns
@@ -325,13 +353,16 @@ def recall_advice(dd, data=_UNSET):
         return None
     if not st or not st.get("my_cid"):
         return None
-    pool = champ_pool(dd, st["my_cid"], st.get("my_role") or "")
-    if not pool:
+    role = _role(dd, st)
+    pool = champ_pool(dd, st["my_cid"], role)
+    pick = data_pick(dd, st, role)
+    if not pool and not pick:
         return None
     owned = set(st.get("my_items") or [])
     gold = int(st.get("my_gold") or 0)
-    nxt = next((i for i in pool.get("core", []) if i not in owned), None) \
-        or next((i for i in pool.get("seq", []) if i not in owned), None)
+    nxt = pick.item if pick else (
+        next((i for i in pool.get("core", []) if i not in owned), None)
+        or next((i for i in pool.get("seq", []) if i not in owned), None))
     if not nxt:
         return None
     total = _idata(dd, nxt).get("gold", {}).get("total", 0) or 0
@@ -359,8 +390,9 @@ def recommend(dd, st=None, data=_UNSET):
     st = st if st is not None else live_state(dd, data)
     if not st or not st["my_cid"]:
         return None
-    role = st["my_role"] or primary_role(dd, st["my_cid"])   # Live Client often omits position
+    role = _role(dd, st)
     pool = champ_pool(dd, st["my_cid"], role)
+    pick = data_pick(dd, st, role)
     owned, lines = st["my_items"], []
     nm = lambda i: dd["items"].get(i, str(i))
     threat = st["threat"] if st["threat"] in ("AD", "AP") else "AD"
@@ -370,28 +402,26 @@ def recommend(dd, st=None, data=_UNSET):
     has = lambda cat, ids: any(cat in pool["cats"].get(i, set()) for i in ids) if pool else False
 
     # ---- the core progression line (the spine) ----
-    nxt = None
-    if pool:
-        core = pool.get("core") or []
-        parts = []
-        for i in core:
-            if i in owned:
-                parts.append(f"{_short(dd, i)} ✓")
-            elif nxt is None:
-                nxt = i
-                parts.append(f"▸ {_short(dd, i)}")
-            else:
-                parts.append(_short(dd, i))
-        if nxt is None:                                   # core complete -> best finisher next
-            nxt = next((i for i in pool["seq"] if i not in owned), None)
-            if nxt is not None:
-                parts.append(f"▸ {_short(dd, nxt)}")
-        if parts:
-            txt = "  →  ".join(parts)
-            cost = ((dd.get("item_data", {}).get(nxt, {}) or {}).get("gold") or {}).get("total", 0) if nxt else 0
-            if nxt and cost and st.get("my_gold", 0) >= cost:
-                txt += "   ·   affordable NOW"
-            lines.append(("core", txt))
+    # Our own data's pick, when it can speak, IS the next item; op.gg's core path fills in the
+    # finished items before it and the plan after it.
+    nxt = pick.item if pick else None
+    core = (pool.get("core") or []) if pool else []
+    parts = [f"{_short(dd, i)} ✓" for i in core if i in owned]
+    if nxt is None:
+        nxt = next((i for i in core if i not in owned), None)
+    if nxt is None and pool:                          # core complete -> best finisher next
+        nxt = next((i for i in pool["seq"] if i not in owned), None)
+    if nxt is not None:
+        parts.append(f"▸ {_short(dd, nxt)}")
+        parts += [_short(dd, i) for i in core if i not in owned and i != nxt]
+    if parts:
+        txt = "  →  ".join(parts)
+        cost = ((dd.get("item_data", {}).get(nxt, {}) or {}).get("gold") or {}).get("total", 0) if nxt else 0
+        if nxt and cost and st.get("my_gold", 0) >= cost:
+            txt += "   ·   affordable NOW"
+        if pick:
+            txt += f"   ·   {pick.why}"
+        lines.append(("core", txt))
 
     # ---- at most ONE insert, and only when it's screaming ----
     insert = None
@@ -419,4 +449,5 @@ def recommend(dd, st=None, data=_UNSET):
     else:
         summary = f"enemy {st['e_ad']} AD / {st['e_ap']} AP"
     return {"champ": dd["id2name"].get(st["my_cid"], "?"), "lines": lines[:2],
-            "summary": summary, "no_pool": pool is None}
+            "summary": summary, "no_pool": pool is None and pick is None,
+            "data_pick": pick}
