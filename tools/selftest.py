@@ -7,7 +7,7 @@ patch (in case op.gg changes shape).
 
   python selftest.py
 """
-import sys, os, re, time, json, ssl, urllib.request, urllib.error
+import sys, os, re, json, ssl, urllib.request, urllib.error
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 for _d in ("core", "ui", "tools"):            # cross-folder flat imports
     sys.path.insert(0, os.path.join(_ROOT, _d))
@@ -1032,108 +1032,47 @@ def c_runes():
 
 
 def c_maxelo():
-    """MAX ELO arms a list of setting keys by name. A typo there is invisible - the switch
+    """CLIMB MODE arms a list of setting keys by name. A typo there is invisible - the switch
     would look armed and quietly leave a feature off - so every key must be a real toggle."""
     import smiteconfig as cfg
     unknown = [k for k in cfg.MAX_ELO_ON if k not in cfg.BOOLS]
     if unknown:
         return FAIL, f"MAX_ELO_ON names settings that don't exist: {unknown}"
-    for k in ("auto_accept", "auto_ban", "auto_mute", "re_entry", "tempo_coach"):
+    for k in ("auto_import", "auto_mute", "re_entry", "tempo_coach"):
         if k not in cfg.MAX_ELO_ON:
             return FAIL, f"MAX_ELO_ON is missing {k!r} - that's a climb feature"
-    import lolimport as limp
-    if not (hasattr(limp, "auto_pick") and hasattr(limp, "pick_watch_update")):
-        return FAIL, "the champ auto-lock is missing - MAX ELO can't hold your pool"
-    return OK, f"{len(cfg.MAX_ELO_ON)} climb toggles, all real; auto-lock present"
+    return OK, f"{len(cfg.MAX_ELO_ON)} climb toggles, all real"
 
 
-def c_autolock():
-    """MAX ELO's auto-LOCK, against a simulated champ-select session. This can't be triggered
-    on demand in a real client, and a break means you find out by getting a champion you didn't
-    ask for, mid-draft, with no way back. So every branch runs here every time."""
-    import lolbuild as lb, lolimport as limp
-    dd = lb.ddragon()
-    YAS, YONE = dd["name2id"]["yasuo"], dd["name2id"]["yone"]
-    real, real_log, real_own = limp._lcu_json, limp._picklog, limp.pickable_ids
-    # smiteless_pick.log is a DIAGNOSTIC — it exists to answer "why didn't my champ lock".
-    # Fixture runs writing fake LOCKED lines into it makes it useless for that, so they don't.
-    limp._picklog = lambda *a, **k: None
+# The LCU calls that MAKE a champ-select decision (accept the ready check, complete a pick or
+# ban action, request/accept a role or pick-order swap). Hovering and importing runes are not
+# decisions; these are.
+_AUTOPILOT = ("ready-check/accept", "/complete", "position-swaps", "pick-order-swaps",
+              "session/swaps", '"completed": True')
 
-    class Fake:                                  # PATCH sets intent; completed (or POST) locks
-        def __init__(self, bans=(), locked=(), in_progress=True):
-            self.act = {"id": 7, "actorCellId": 0, "type": "pick", "isInProgress": in_progress,
-                        "completed": False, "championId": 0}
-            self.bans, self.locked = list(bans), list(locked)
 
-        def __call__(self, method, path, payload=None, timeout=5):
-            if method == "GET":
-                other = [{"id": 9, "actorCellId": 3, "type": "pick", "completed": True,
-                          "championId": c} for c in self.locked]
-                return {"localPlayerCellId": 0, "timer": {"adjustedTimeLeftInPhase": 27000},
-                        "bans": {"myTeamBans": self.bans, "theirTeamBans": []},
-                        "myTeam": [], "actions": [[self.act], other]}
-            if method == "PATCH":
-                self.act["championId"] = payload.get("championId", 0)
-                self.act["completed"] = self.act["completed"] or bool(payload.get("completed"))
-            if method == "POST" and path.endswith("/complete"):
-                self.act["completed"] = True
-            return {}
-
-    def lock(fake, pool, settle=True, owned=None):
-        limp._lcu_json = fake
-        limp.pickable_ids = (lambda *a, **k: owned) if owned is not None else (lambda *a, **k: None)
-        limp._PICK_HOVER.update(action=None, cid=0, ts=0.0)
-        limp._PICK_FAIL.clear()
-        limp.auto_pick(dd, pool)                 # tick 1: hover only, never a lock
-        if settle:
-            limp._PICK_HOVER["ts"] -= limp.PICK_SETTLE_S + 0.1
-        return limp.auto_pick(dd, pool)          # tick 2: the lock
-
-    try:
-        cases = [("main free", Fake(), [YAS, YONE], YAS),
-                 ("main banned -> backup", Fake(bans=[YAS]), [YAS, YONE], YONE),
-                 ("main taken -> backup", Fake(locked=[YAS]), [YAS, YONE], YONE),
-                 ("both gone", Fake(bans=[YAS], locked=[YONE]), [YAS, YONE], None),
-                 ("not my turn", Fake(in_progress=False), [YAS, YONE], None),
-                 ("no pool", Fake(), [], None)]
-        bad = [n for n, f, pool, want in cases if lock(f, pool) != want]
-        if lock(Fake(), [YAS, YONE], settle=False) is not None:
-            bad.append("locked before the hover settled")
-        # OWNERSHIP. Dropping the mastery gate made the pool merit-only, which includes
-        # champions you don't own — the client refuses those, and v0.9.59 retried one every
-        # second until the timer ran out and the draft picked for you. The top pick being
-        # unowned must fall straight through to the next one.
-        if lock(Fake(), [YAS, YONE], owned={YONE}) != YONE:
-            bad.append("an unowned top pick must skip to the next champion")
-        if lock(Fake(), [YAS, YONE], owned=set()) is not None:
-            bad.append("owning nothing on the list must lock nothing")
-        if lock(Fake(), [YAS, YONE], owned={YAS, YONE}) != YAS:
-            bad.append("owning both must still take the best one")
-        # FLIP-FLOP. The pool is rebuilt every poll and suggest_champs treats an ally's champ as
-        # unavailable — and our own hover IS an ally pick, so hovering A promoted B and hovering
-        # B promoted A. It oscillated once a second and never locked. auto_pick must COMMIT to
-        # its target: a pool that reorders underneath it changes nothing.
-        f = Fake()
-        limp._lcu_json = f
-        limp.pickable_ids = lambda *a, **k: {YAS, YONE}
-        limp._PICK_HOVER.update(action=None, cid=0, ts=0.0)
-        limp._PICK_FAIL.clear()
-        limp.auto_pick(dd, [YAS, YONE])          # commits to Yasuo
-        first = f.act["championId"]
-        for i in range(6):                       # pool flips order under it, once a "second"
-            limp.auto_pick(dd, ([YONE, YAS] if i % 2 == 0 else [YAS, YONE]))
-        if f.act["championId"] != first:
-            bad.append("target changed when the pool reordered (the flip-flop is back)")
-        limp._PICK_HOVER["ts"] -= limp.PICK_SETTLE_S + 0.1
-        if limp.auto_pick(dd, [YONE, YAS]) != first:
-            bad.append("did not lock the champion it committed to")
-        limp._PICK_HOVER.update(action=None, cid=0, ts=0.0)
-        limp._PICK_FAIL.clear()
-    finally:
-        limp._lcu_json, limp._picklog, limp.pickable_ids = real, real_log, real_own
-    if bad:
-        return FAIL, "auto-lock wrong on: " + "; ".join(bad)
-    return OK, "hover-then-lock, ban/taken fallback to backup, stands down when both are gone"
+def c_noautopilot():
+    """Champ select stays YOURS: nothing may accept the ready check, lock a pick or a ban, or
+    send role/pick-order swap requests for you - Riot's third-party policy rules out automating
+    those decisions. Suggestions and click-to-hover are fine; the commit is not. A tripwire
+    over every source file for the LCU calls that make those decisions."""
+    import smiteconfig as cfg
+    hits = []
+    for d in ("core", "ui", "tools"):
+        folder = os.path.join(_ROOT, d)
+        for f in sorted(os.listdir(folder)):
+            if not f.endswith(".py") or f == "selftest.py":
+                continue
+            src = open(os.path.join(folder, f), encoding="utf-8").read()
+            hits += [f"{d}/{f}: {m}" for m in _AUTOPILOT if m in src]
+    for rel in ("smiteless.ahk", os.path.join("dist", "tray.ahk")):
+        p = os.path.join(_ROOT, rel)
+        if os.path.exists(p) and "ready-check/accept" in open(p, encoding="utf-8").read():
+            hits.append(f"{rel}: ready-check/accept")
+    hits += [f"setting {k}" for k in ("auto_ban", "auto_accept") if k in cfg.BOOLS]
+    if hits:
+        return FAIL, "champ-select autopilot found: " + ", ".join(hits[:4])
+    return OK, "no auto-accept, auto-lock, auto-ban or swap requests anywhere"
 
 
 def c_lcu():
@@ -1172,8 +1111,8 @@ def main():
         ("No input injection (reads only)", c_noinput),
         ("Personal fit (your results)", c_fit),
         ("Adaptive runes (comp-aware)", c_runes),
-        ("MAX ELO (one-switch arming)", c_maxelo),
-        ("MAX ELO auto-lock (draft)", c_autolock),
+        ("Climb mode (one-switch arming)", c_maxelo),
+        ("No champ-select autopilot", c_noautopilot),
         ("League client / LCU", c_lcu),
     ]
     for name, fn in checks:

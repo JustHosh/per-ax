@@ -63,10 +63,6 @@ NOAUTO = os.path.expanduser("~/.claude/smiteless_noautoopen")   # presence = aut
 NOHOME = os.path.expanduser("~/.claude/smiteless_nohomeonstart")  # presence = open profile/home at startup OFF
 HERE = os.path.dirname(os.path.abspath(__file__))
 
-SWAP_ROLES = ("top", "jungle", "mid", "adc", "support")   # valid targets for auto-accept role swap
-# auto_pick_swap: "" off / "any" accept-all / "first" / "last" / a specific pick slot "1".."5".
-PICK_SWAP_VALUES = ("any", "first", "last", "1", "2", "3", "4", "5")
-
 # streak_influence: 0..100, 50 = the original/default behavior (a multiplier m = value/50
 #   scales the enemy form weight, the streak compounding, and the extreme override).
 # gank_threshold: |score| cut for GANK / TOUGH (lower = more lanes tagged).
@@ -103,25 +99,23 @@ BOOLS = {"matchup_tips": True,    # generate the AI lane tip in champ-select/in-
          "dock_champ_select": True,  # champ select helper docks as a tall panel LEFT of the client
          "board_topmost": True,   # live board/scoreboard stays above other windows (untick to allow covering)
          "auto_import": False,    # import runes+summs AUTOMATICALLY when you lock a champ
-         "auto_ban": False,       # champ select: auto-lock the top recommended ban on your ban turn
-         "auto_accept": False,    # auto-accept queue ready checks
          "auto_mute": True,       # in-game quiet: League's own chat/ping settings, written
                                   #   through the client and read back, nothing typed — core/lolmute
          "flash_on_d": True,      # import puts Flash on D (off = put Flash on F)
          "solo_coaching": True,   # profile/climb/session coaching from RANKED SOLO games only
          "draft_link": True,      # champ select: publish the live draft board + post the link in chat
          "draft_autoopen": True,  # champ select: also OPEN the draft board in your own browser
-         "max_elo": False,        # MAX ELO: one champ, locked, everything climb-focused armed
+         "max_elo": False,        # CLIMB MODE: every climb read on + your pool reminded in draft
          "legend_seen": False}    # widget: LEGEND card already auto-opened once (state, not a toggle)
 
-# MAX ELO — the one switch. Arming it turns on every surface and automation that shortens the
-# climb and nothing that doesn't, then holds you to ONE champion (max_elo_main, falling back to
-# max_elo_backup if it's banned or taken) and locks it for you. The pool discipline is the point:
-# the decisions that cost the most LP are the ones made in the 30 seconds before a game, and
-# this removes them. Anything NOT in this list is deliberately absent — auto_ban is here because
-# banning the champ that threatens your team is climb work, `flash_on_d` is not a climb lever at
-# all, and `board_topmost` is taste.
-MAX_ELO_ON = ("auto_accept", "auto_ban", "auto_import", "auto_mute",
+# CLIMB MODE (the old "MAX ELO" switch, keys kept for compatibility) — arming it turns on every
+# surface that shortens the climb and nothing that doesn't, and names your champion pool
+# (max_elo_main + max_elo_backup). Champ select then puts the pool first in the suggestion strip
+# and flags a hover off it — but it NEVER accepts, bans, picks or locks for you: those decisions
+# stay your clicks (Riot's third-party policy rules out automating them). Anything NOT in this
+# list is deliberately absent — `flash_on_d` is not a climb lever at all, and `board_topmost`
+# is taste.
+MAX_ELO_ON = ("auto_import", "auto_mute",
               "item_widget", "game_intel", "tempo_coach", "free_alarm", "re_entry",
               "bleed_guard", "closer", "gold_clock", "ward_clock", "the_out", "respawn_plan", "death_brief", "loading_scout",
               "queue_call",
@@ -134,10 +128,12 @@ MAX_ELO_ON = ("auto_accept", "auto_ban", "auto_import", "auto_mute",
 # draft_msg: the champ-select chat line the link is posted with ('' = the branded default).
 # Settings keys belonging to features that have been CUT. save() drops them, so a retired
 # surface leaves nothing behind in the user's settings file.
-RETIRED = ("fav_champs", "ghost_race", "duo_detection")
+RETIRED = ("fav_champs", "ghost_race", "duo_detection",
+           # champ-select autopilot, removed for policy reasons (never auto-decide for you)
+           "auto_ban", "auto_accept", "ban_list", "auto_swap_roles", "auto_pick_swap")
 
-STRINGS = {"max_elo_main": "",      # MAX ELO: the one champion you play ('' = not chosen yet)
-           "max_elo_backup": "",    # ... and the one you take when the main is banned/taken
+STRINGS = {"max_elo_main": "",      # CLIMB MODE: the champion you queue for ('' = not chosen)
+           "max_elo_backup": "",    # ... and the one you go to when the main is banned/taken
            "draft_db": "",
            "draft_page": "https://bobbyroylee.github.io/smiteless/draft/",
            "draft_msg": ""}
@@ -147,9 +143,6 @@ def load():
     s = dict(DEFAULTS)
     s.update(BOOLS)
     s.update(STRINGS)
-    s["ban_list"] = ["Shyvana"]   # ordered PERMA-BAN priority: highest still-available gets banned
-    s["auto_swap_roles"] = []     # champ select: role (position) swaps to auto-accept INTO
-    s["auto_pick_swap"] = ""      # champ select pick order: "" off / "any" / "first" / "last"
     try:
         raw = json.load(open(PATH, encoding="utf-8"))
         for k in DEFAULTS:
@@ -163,20 +156,13 @@ def load():
         for k in STRINGS:
             if k in raw:
                 s[k] = str(raw[k]).strip()
-        if isinstance(raw.get("ban_list"), list):
-            s["ban_list"] = [str(x).strip() for x in raw["ban_list"] if str(x).strip()][:10]
-        if isinstance(raw.get("auto_swap_roles"), list):
-            s["auto_swap_roles"] = [r for r in (str(x).strip().lower() for x in raw["auto_swap_roles"])
-                                    if r in SWAP_ROLES]
-        pk = str(raw.get("auto_pick_swap", "")).strip().lower()
-        s["auto_pick_swap"] = pk if pk in PICK_SWAP_VALUES else ""
     except Exception:
         pass
     return s
 
 
 def arm_max_elo(main, backup=""):
-    """Arm MAX ELO: every climb feature on, the champion pool set to main (+ backup), saved.
+    """Arm CLIMB MODE: every climb feature on, the champion pool set to main (+ backup), saved.
     Returns the written settings dict. Deliberately a WRITE, not a read-time override — the
     checkboxes must show the truth, and un-arming must not silently undo choices you made."""
     upd = {k: True for k in MAX_ELO_ON}
@@ -186,9 +172,8 @@ def arm_max_elo(main, backup=""):
 
 
 def stand_down_max_elo():
-    """Turn the champion LOCK off and nothing else. The features MAX ELO switched on stay on —
-    they were good ideas before you armed it and they still are; the only thing you asked to
-    stop is being auto-locked onto one champion."""
+    """Turn the champion-pool reminder off and nothing else. The features CLIMB MODE switched
+    on stay on — they were good ideas before you armed it and they still are."""
     return save({"max_elo": False})
 
 
@@ -224,20 +209,6 @@ def save(s):
             clean[k] = str(s[k]).strip()
         elif k not in clean:
             clean[k] = STRINGS[k]
-    if "ban_list" in s:
-        clean["ban_list"] = [str(x).strip() for x in (s.get("ban_list") or []) if str(x).strip()][:10]
-    elif "ban_list" not in clean:
-        clean["ban_list"] = ["Shyvana"]
-    if "auto_swap_roles" in s:
-        clean["auto_swap_roles"] = [r for r in (str(x).strip().lower() for x in (s.get("auto_swap_roles") or []))
-                                    if r in SWAP_ROLES]
-    elif "auto_swap_roles" not in clean:
-        clean["auto_swap_roles"] = []
-    if "auto_pick_swap" in s:
-        pk = str(s.get("auto_pick_swap", "")).strip().lower()
-        clean["auto_pick_swap"] = pk if pk in PICK_SWAP_VALUES else ""
-    elif "auto_pick_swap" not in clean:
-        clean["auto_pick_swap"] = ""
     for k in RETIRED:                       # a cut feature must not leave its key behind
         clean.pop(k, None)
     try:

@@ -2463,7 +2463,7 @@ def _rune_chip(d, x, y, idx, wr, sel, hits):
 
 def render_cs_vertical(dd, my_cid, my_role, allies, build, suggestions=None, bans=None,
                        enemy_picks=None, ban_ideas=None, dodge=None, auto_import=False,
-                       note=None, auto_ban=False, fit_notes=None, rune_note=None):
+                       note=None, fit_notes=None, rune_note=None):
     """The champ-select helper as a TALL panel meant to dock LEFT of the League client:
     your champ + runes + core icons + import, suggested picks, good bans, lobby bans, and
     your team - stacked vertically. Returns a PIL image with .hitmap for the import button."""
@@ -2621,7 +2621,6 @@ def render_cs_vertical(dd, my_cid, my_role, allies, build, suggestions=None, ban
     y += 6
     # good bans
     d.text((20, y), "GOOD BANS", font=display_font(9, True), fill=GOLD)
-    _auto_chip(d, VW - 78, y - 3, auto_ban, hits, action="action:toggle_auto_ban", label="AUTO")
     if ban_ideas:
         xx = 20
         for cid, my_wr in ban_ideas[:3]:
@@ -3213,10 +3212,10 @@ def _lcu_get(port, hdr, path, timeout=3):
 
 def queue_state():
     """What the LCU knows while you're queueing: queue name, your role prefs, time in
-    queue vs the estimate, the ready-check countdown, and whether auto-accept is armed.
-    All cheap local reads — safe to poll every couple of seconds."""
+    queue vs the estimate, and the ready-check countdown. All cheap local reads — safe to
+    poll every couple of seconds."""
     out = {"phase": phasecheck.phase(), "queue": "", "roles": [], "tq": None, "est": None,
-           "rc": None, "auto": bool(cfg.load().get("auto_accept", False))}
+           "rc": None}
     lc = lg._lcu()
     if not lc:
         return out
@@ -3260,13 +3259,9 @@ def render_queue_card(dd, q, sugg=None):
     if ready:
         _railed_card(d, (16, 46, W - 16, 106), GOLD, fill=_dim(GOLD, 0.13), outline=_dim(GOLD, 0.6), width=1)
         d.text((36, 62), "MATCH FOUND", font=display_font(24, True), fill=GOLD)
-        if q.get("auto"):
-            # Bahnschrift has no ✓ glyph -> route through the symbol-aware body face
-            d.text((W - 36, 62), "auto-accepting ✓", font=font(14, True, "✓"), fill=GREEN, anchor="ra")
-        else:
-            left = q.get("rc")
-            t = f"ACCEPT NOW{f'  ·  {int(max(0, 12 - left))}s' if isinstance(left, (int, float)) else ''}"
-            d.text((W - 36, 62), t, font=display_font(14, True), fill=WARN, anchor="ra")
+        left = q.get("rc")
+        t = f"ACCEPT NOW{f'  ·  {int(max(0, 12 - left))}s' if isinstance(left, (int, float)) else ''}"
+        d.text((W - 36, 62), t, font=display_font(14, True), fill=WARN, anchor="ra")
     else:
         _railed_card(d, (16, 46, W - 16, 106), ARC, fill=SURFACE, outline=PEDGE, width=1)
         tq = q.get("tq")
@@ -3361,12 +3356,6 @@ def run(emit, count=None, wait=False, stop=None, monitor=False):
             build, build_cid, auto_done, auto_note, last_cs_sig = None, 0, 0, None, None
             team_read = {"state": "idle", "text": ""}
             dodged = True
-            try:
-                import lolimport as limp
-                limp.ban_watch_update(dd, [], [], False)   # stale targets must not fire next draft
-                limp.pick_watch_update(dd, [], False)      # ... and never auto-lock into a dodge
-            except Exception:
-                pass
             emit("hide")
         if ph == "ChampSelect" and dodged:
             dodged = False                # a fresh draft: state was reset above, re-init normally
@@ -3469,61 +3458,19 @@ def run(emit, count=None, wait=False, stop=None, monitor=False):
                 # Ban ideas: the champ that threatens the TEAM'S hovers most (every ally's
                 # pick intent + yours, counters aggregated), falling back to your champ's
                 # counters, then to high-priority solo-q bans (bans happen before picks, so
-                # there's always a target to show/auto-ban).
+                # there's always a target to show). Shown only — the ban is your click.
                 ideas = team_bans(dd, allies, taken=taken, self_cid=my_cid) \
                     or (suggest_bans(dd, my_cid, my_role, taken=taken) if my_cid else []) \
                     or general_bans(dd, my_role, taken)
-                # PRIORITY BAN LIST first (settings, e.g. perma-ban Shyvana), then the live
-                # EV ideas as fallback. The actual lock runs on lolimport's 1s watcher
-                # thread — this render loop can stall for seconds on network work, which
-                # used to swallow the last-12s firing window (the 'ban didn't happen' bug).
-                try:
-                    import lolimport as limp
-                    listed = [dd["name2id"].get(dd["norm"](nm2))
-                              for nm2 in settings.get("ban_list") or []]
-                    targets = [c for c in listed if c] + [c for c, _ in ideas]
-                    limp.ban_watch_update(dd, targets, ally_ids,
-                                          settings.get("auto_ban", False))
-                    # MAX ELO: hold the pool and lock it. Same dedicated-watcher shape as the
-                    # ban, for the same reason — this render loop is too slow to be trusted
-                    # with a firing window.
+                # CLIMB MODE pool (Settings): your main + backup. Never picked or locked for you
+                # — it leads the suggestion strip (one click hovers it) and a hover off the
+                # pool gets a reminder. The pick stays your click.
+                pool = []
+                if settings.get("max_elo"):
                     pool = [dd["name2id"].get(dd["norm"](nm2))
                             for nm2 in (settings.get("max_elo_main"),
                                         settings.get("max_elo_backup")) if nm2]
                     pool = [c for c in pool if c]
-                    if settings.get("max_elo") and not pool and my_role:
-                        # NO CHAMPION SET -> lock the best pick for THIS draft instead of
-                        # standing down. Same recommender the panel's GOOD THIS GAME strip
-                        # shows (counters into the locked enemies + comp fit, merit only),
-                        # best-first, and it already excludes anything banned or taken — so
-                        # the list doubles as its own backup chain.
-                        # topn=12, not 5: auto_pick filters this to champions you can actually
-                        # pick, and a five-deep list can be emptied by ownership + bans alone.
-                        try:
-                            pool = suggest_champs(dd, my_role, _mates(ally_ids, my_cid),
-                                                  enemy_ids, topn=12, fam=None)
-                            # ...and never AUTO-LOCK you onto a champion your own results say
-                            # you're bad on (core/lolfit), which matters far more here than in
-                            # a list you can ignore.
-                            import lolfit as _fit
-                            pool, _fn = _fit.apply(_fit.build(), dd, pool)
-                        except Exception:
-                            pool = []
-                    limp.pick_watch_update(dd, pool, settings.get("max_elo", False))
-                except Exception:
-                    pass
-                if settings.get("auto_swap_roles"):      # teammate offered a role you want? -> accept
-                    try:
-                        import lolimport as limp
-                        limp.auto_accept_swap(settings.get("auto_swap_roles"))
-                    except Exception:
-                        pass
-                if settings.get("auto_pick_swap"):        # work pick order toward first/last pick
-                    try:
-                        import lolimport as limp
-                        limp.auto_pick_order_swap(settings.get("auto_pick_swap"))
-                    except Exception:
-                        pass
                 # ALLY SCOUT while you can still dodge: teammate Riot IDs come from the
                 # Riot Client chat participants (allies only — enemies are anonymized).
                 # One background pass per champ select; flags tilted / F-grade teammates.
@@ -3594,7 +3541,10 @@ def run(emit, count=None, wait=False, stop=None, monitor=False):
                 # fallback for a champion your history can't speak about, which is exactly the
                 # case it describes: one you've barely played.
                 climb_note = ""
-                if my_cid and not auto_note:
+                if pool and my_cid and my_cid not in pool and not auto_note:
+                    climb_note = ("⚠ off your pool — you queue for "
+                                  + " / ".join(dd["id2name"].get(c, "?") for c in pool))
+                if my_cid and not auto_note and not climb_note:
                     try:
                         _nm = (dd.get("id2name") or {}).get(my_cid, "")
                         _st, _why = lpl.short_note(lpl.live_board(), _nm) if _nm else (None, None)
@@ -3620,7 +3570,7 @@ def run(emit, count=None, wait=False, stop=None, monitor=False):
                 sig = (my_cid, my_role, tuple(sorted(ally_role.items())),
                        tuple(sorted((c, r) for c, r in enemies if c)), bool(build),
                        tuple(bans_my), tuple(bans_their),
-                       bool(settings.get("auto_import", False)), bool(settings.get("auto_ban", False)),
+                       bool(settings.get("auto_import", False)), tuple(pool),
                        auto_note, climb_note, team_read["text"], get_rune_idx())
                 if sig != last_cs_sig:
                     # WHAT'S GOOD THIS GAME — the same call the web DraftBoard makes (fam=None):
@@ -3669,6 +3619,7 @@ def run(emit, count=None, wait=False, stop=None, monitor=False):
                     # gate (a champ you own with 0 games still qualifies) — it just drops the
                     # ones the client would refuse. Unavailable list -> show them all rather
                     # than an empty strip.
+                    _own = None
                     try:
                         import lolimport as _limp
                         _own = _limp.pickable_ids()
@@ -3676,6 +3627,12 @@ def run(emit, count=None, wait=False, stop=None, monitor=False):
                             sugg = [c for c in sugg if c in _own]
                     except Exception:
                         pass
+                    if pool:
+                        # CLIMB MODE: your pool leads the strip while it's still open to you
+                        # (not banned, not taken, pickable). One click hovers it; locking it in
+                        # is still your click in the client.
+                        first = [c for c in pool if c not in taken and (not _own or c in _own)]
+                        sugg = first + [c for c in sugg if c not in first]
                     sugg = sugg[:5]
                     # High-confidence dodge read from op.gg lane matchups once enough enemies lock.
                     dodge = dodge_read(dd, allies, enemies) if settings.get("dodge_alerts", True) else None
@@ -3687,7 +3644,6 @@ def run(emit, count=None, wait=False, stop=None, monitor=False):
                              enemy_picks=enemy_ids, ban_ideas=ideas, dodge=dodge,
                              auto_import=bool(settings.get("auto_import", False)),
                              note=(auto_note or team_read["text"] or climb_note),
-                             auto_ban=bool(settings.get("auto_ban", False)),
                              fit_notes=fit_notes, rune_note=rune_note))
                     else:
                         emit(render_image(dd, my_cid, my_role, ally_role, {}, build, {}, {}, src,

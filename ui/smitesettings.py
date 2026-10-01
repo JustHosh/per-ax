@@ -114,10 +114,10 @@ def main():
     except Exception:
         pass
 
-    # ---- MAX ELO -----------------------------------------------------------------------
+    # ---- CLIMB MODE (the old MAX ELO switch; setting keys kept) -------------------------
     # The one switch. Name your champion and its backup, hit ARM, and every climb feature in
-    # cfg.MAX_ELO_ON comes on at once while champ select is held to that pool and locked for
-    # you. It sits at the very top because it is the only control most sessions need to touch.
+    # cfg.MAX_ELO_ON comes on at once, while champ select leads with that pool and flags a
+    # hover off it. It never accepts, bans or locks for you — those clicks stay yours.
     maxelo_main = tk.StringVar(value=s.get("max_elo_main", ""))
     maxelo_back = tk.StringVar(value=s.get("max_elo_backup", ""))
     maxelo_on = {"v": bool(s.get("max_elo", False))}
@@ -128,16 +128,15 @@ def main():
     me_in.pack(fill="x", padx=12, pady=(9, 10))
     me_head = tk.Frame(me_in, bg=SURFACE)
     me_head.pack(fill="x")
-    tk.Label(me_head, text="MAX ELO", bg=SURFACE, fg=EMBER,
+    tk.Label(me_head, text="CLIMB MODE", bg=SURFACE, fg=EMBER,
              font=skin.display(17, bold=True)).pack(side="left")
     me_state = tk.Label(me_head, text="", bg=SURFACE, font=skin.body(SMALL, bold=True))
     me_state.pack(side="left", padx=(10, 0), pady=(6, 0))
-    tk.Label(me_in, text="Everything that shortens the climb, on. Smiteless auto-accepts, bans "
-             "the champ that threatens your team, LOCKS your pick for you, imports the runes, "
-             "mutes the lobby, and runs every in-game read. Name a Main (and a Backup) to be "
-             "held to one champion — or leave them EMPTY and it locks the best pick for each "
-             "draft instead. Either way the 30 seconds before a game, where the LP goes, stop "
-             "being a decision.",
+    tk.Label(me_in, text="Everything that shortens the climb, on: rune import on lock, in-game "
+             "quiet, the draft reads and every in-game guard. Name a Main (and a Backup) and "
+             "champ select leads with them — one click hovers your pick — and warns you when "
+             "you hover anything else. It never accepts, bans or locks for you: those clicks "
+             "stay yours.",
              bg=SURFACE, fg=MUTED, font=skin.body(SMALL), justify="left",
              anchor="w", wraplength=430).pack(fill="x", pady=(4, 6))
     me_row = tk.Frame(me_in, bg=SURFACE)
@@ -170,32 +169,31 @@ def main():
     def _me_paint():
         on = maxelo_on["v"]
         me_state.config(text=("ARMED" if on else "STANDING BY"), fg=(EMBER if on else MUTED))
-        me_btn.config(text=("STAND DOWN" if on else "ARM MAX ELO"))
+        me_btn.config(text=("STAND DOWN" if on else "ARM CLIMB MODE"))
         if on:
             mn = maxelo_main.get().strip()
             bk = maxelo_back.get().strip()
             if mn:
-                me_note.config(text=f"Locked to {mn}" + (f", backup {bk}." if bk else ".")
-                               + " Champ select is on rails — change your mind here, not in "
-                                 "the lobby.", fg=EMBER)
+                me_note.config(text=f"Your pool: {mn}" + (f", backup {bk}." if bk else ".")
+                               + " Champ select leads with it and flags anything else you "
+                                 "hover — change your mind here, not in the lobby.", fg=EMBER)
             else:
-                me_note.config(text="No champion set — so it locks the BEST PICK for each "
-                                    "draft: the same read as GOOD THIS GAME (counters into "
-                                    "their locks + comp fit), best first. Name a main above "
-                                    "if you'd rather it always be one champion.", fg=EMBER)
+                me_note.config(text="No champion set — champ select shows the best picks for "
+                                    "each draft (GOOD THIS GAME). Name a main above to be "
+                                    "reminded of your pool instead.", fg=EMBER)
         else:
-            me_note.config(text="Nothing is being locked. Arming also switches on every feature "
-                                "below that shortens the climb.", fg=MUTED)
+            me_note.config(text="No pool reminder. Arming also switches on every feature below "
+                                "that shortens the climb.", fg=MUTED)
 
     def _me_toggle():
         if maxelo_on["v"]:
             cfg.stand_down_max_elo()
             maxelo_on["v"] = False
-            status.config(text="MAX ELO stood down - champ select is yours again", fg=MUTED)
+            status.config(text="Climb mode stood down - no pool reminder", fg=MUTED)
             _me_paint()
             return
-        # An empty main is a VALID way to arm: no champion named means "lock whatever is best
-        # for this draft". Requiring one made the button need setup before it did anything.
+        # An empty main is a VALID way to arm: no champion named just means no pool reminder.
+        # Requiring one made the button need setup before it did anything.
         main_nm = _canon(maxelo_main.get()) or ""
         back_nm = _canon(maxelo_back.get()) or ""
         maxelo_main.set(main_nm)
@@ -206,12 +204,12 @@ def main():
             _v.set(True)
         _me_paint()
         who = (main_nm + (f" / {back_nm}" if back_nm else "")) if main_nm \
-            else "best pick per draft"
-        status.config(text=f"MAX ELO armed - {who}, everything climb-focused on", fg=GOOD)
+            else "no pool set"
+        status.config(text=f"Climb mode armed - {who}, everything climb-focused on", fg=GOOD)
 
     # THE button: this window's one primary (UIDESIGN §: exactly one EMBER-filled button per
     # window), sized up — it's the only control most sessions touch. Save drops to secondary.
-    me_btn = tk.Button(me_btnrow, text="ARM MAX ELO", command=lambda: _me_toggle(),
+    me_btn = tk.Button(me_btnrow, text="ARM CLIMB MODE", command=lambda: _me_toggle(),
                        bg=EMBER, fg=VOID, activebackground=EMBER_DEEP, activeforeground=VOID,
                        relief="flat", bd=0, padx=26, pady=8, cursor="hand2",
                        font=skin.display(13, bold=True))
@@ -296,7 +294,6 @@ def main():
 
     tips = tk.BooleanVar(value=s["matchup_tips"])
     widget = tk.BooleanVar(value=s["item_widget"])
-    autoq = tk.BooleanVar(value=s.get("auto_accept", False))
     intel = tk.BooleanVar(value=s.get("game_intel", True))
     tempo = tk.BooleanVar(value=s.get("tempo_coach", True))
     freev = tk.BooleanVar(value=s.get("free_alarm", True))
@@ -315,17 +312,16 @@ def main():
     dodge = tk.BooleanVar(value=s.get("dodge_alerts", True))
     dock = tk.BooleanVar(value=s.get("dock_champ_select", True))
     autoimp = tk.BooleanVar(value=s.get("auto_import", False))
-    autoban = tk.BooleanVar(value=s.get("auto_ban", False))
     automute = tk.BooleanVar(value=s.get("auto_mute", True))
     boardtop = tk.BooleanVar(value=s.get("board_topmost", True))
     draftlink = tk.BooleanVar(value=s.get("draft_link", True))
     draftopen = tk.BooleanVar(value=s.get("draft_autoopen", True))
     flash_side = tk.IntVar(value=(0 if s.get("flash_on_d", True) else 1))  # 0=D, 1=F
 
-    # Which checkboxes MAX ELO switches on, so arming it visibly ticks them instead of quietly
-    # changing settings behind the panel. Mirrors cfg.MAX_ELO_ON — anything there without a
-    # control here just has no checkbox (gank_kit, solo_coaching live elsewhere/nowhere).
-    _MAXELO_VARS = [(autoq, "auto_accept"), (autoban, "auto_ban"), (autoimp, "auto_import"),
+    # Which checkboxes CLIMB MODE switches on, so arming it visibly ticks them instead of
+    # quietly changing settings behind the panel. Mirrors cfg.MAX_ELO_ON — anything there
+    # without a control here just has no checkbox (gank_kit, solo_coaching live elsewhere).
+    _MAXELO_VARS = [(autoimp, "auto_import"),
                     (automute, "auto_mute"), (widget, "item_widget"), (intel, "game_intel"),
                     (tempo, "tempo_coach"), (freev, "free_alarm"), (reentryv, "re_entry"),
                     (bleedv, "bleed_guard"), (closerv, "closer"), (goldv, "gold_clock"),
@@ -423,10 +419,8 @@ def main():
         ("Keep live board always on top", boardtop),
         ("Dock champ-select panel by client", dock),
     ])
-    _feat_group("CHAMP-SELECT AUTOMATION", [
-        ("Auto-accept queue", autoq),
+    _feat_group("CHAMP SELECT", [
         ("Auto-import runes + summs on lock", autoimp),
-        ("Auto-ban (perma-ban list first)", autoban),
         ("Dodge alerts", dodge),
         ("Live draft link (URL in chat)", draftlink),
         ("Also open the draft board for me", draftopen),
@@ -443,42 +437,6 @@ def main():
              bg=VOID, fg=MUTED, font=skin.body(SMALL), justify="left",
              anchor="w", wraplength=430).pack(fill="x", padx=18, pady=(0, 2))
 
-    # Auto-accept ROLE (position) swaps — pick which roles you'll swap INTO.
-    _SWAP_LBL = {"top": "Top", "jungle": "Jungle", "mid": "Mid", "adc": "ADC", "support": "Support"}
-    _swap_cur = set(s.get("auto_swap_roles") or [])
-    swapvars = {r: tk.BooleanVar(value=(r in _swap_cur)) for r in cfg.SWAP_ROLES}
-    skin.section_rule(body, "AUTO ROLE SWAP (autofill escape)").pack(fill="x", padx=18, pady=(10, 2))
-    tk.Label(body, text="Check the roles you actually play. If you get autofilled off them, Smiteless "
-             "automatically REQUESTS a swap from a teammate who has one — and accepts any offer that "
-             "lands you on one. It only ever moves you ONTO a checked role, never off one. None "
-             "checked = off.",
-             bg=VOID, fg=MUTED, font=skin.body(SMALL), justify="left",
-             anchor="w", wraplength=430).pack(fill="x", padx=18, pady=(0, 2))
-    swaprow = tk.Frame(body, bg=VOID)
-    swaprow.pack(anchor="w", padx=16, pady=(0, 2))
-    for r in cfg.SWAP_ROLES:
-        _chk(swaprow, _SWAP_LBL[r], swapvars[r]).pack(side="left", padx=(0, 8))
-
-    # Auto PICK-ORDER swap — trade your spot toward a specific pick slot (1st..5th).
-    _pk = str(s.get("auto_pick_swap") or "")
-    _pk = {"first": "1", "last": "5"}.get(_pk, _pk)     # legacy first/last -> a slot number
-    pickswap = tk.StringVar(value=(_pk if _pk in ("any", "1", "2", "3", "4", "5") else "off"))
-    skin.section_rule(body, "AUTO PICK-ORDER SWAP").pack(fill="x", padx=18, pady=(10, 2))
-    tk.Label(body, text="Auto-handle pick-order swaps toward the slot you pick. 1st = first pick "
-             "(lock a contested champ early); 5th = last pick (counter-pick). Pick 4th/5th to sit "
-             "near the end without insisting on dead-last. It accepts any offer that moves you "
-             "CLOSER to your slot and asks for one otherwise. \"Any\" just accepts every incoming "
-             "request. A slot past the lobby size just means last.",
-             bg=VOID, fg=MUTED, font=skin.body(SMALL), justify="left",
-             anchor="w", wraplength=430).pack(fill="x", padx=18, pady=(0, 2))
-    pkrow = tk.Frame(body, bg=VOID)
-    pkrow.pack(anchor="w", padx=16, pady=(0, 2))
-    for _lbl, _val in (("Off", "off"), ("Any", "any"), ("1st", "1"), ("2nd", "2"),
-                       ("3rd", "3"), ("4th", "4"), ("5th", "5")):
-        tk.Radiobutton(pkrow, text=_lbl, variable=pickswap, value=_val, bg=VOID, fg=TXT,
-                       selectcolor=SUNKEN, activebackground=VOID, activeforeground=TXT,
-                       font=skin.body(BODY), bd=0, highlightthickness=0).pack(side="left", padx=(0, 8))
-
     def _canon(nm):
         nm = (nm or "").strip()
         if not nm:
@@ -487,68 +445,6 @@ def main():
             return nm
         cid = _name2id.get(_norm(nm))
         return _id2name.get(cid) if cid else None
-
-    skin.section_rule(body, "PERMA-BAN LIST").pack(fill="x", padx=18, pady=(12, 2))
-    tk.Label(body, text="With auto-ban on, your ban locks the highest champ on this list that's "
-             "still available (skipping anything a teammate is hovering), falling back to the "
-             "live recommended bans if the whole list is gone. Order is priority (use ↑/↓).",
-             bg=VOID, fg=MUTED, font=skin.body(SMALL), justify="left",
-             anchor="w", wraplength=430).pack(fill="x", padx=18, pady=(0, 4))
-    banfr = skin.card(body, rail=LINE)
-    banfr.pack(fill="x", padx=14, pady=(0, 6))
-    ban_addrow = tk.Frame(banfr.body, bg=SURFACE)
-    ban_addrow.pack(fill="x", padx=8, pady=(8, 4))
-    ban_var = tk.StringVar()
-    ban_cb = ttk.Combobox(ban_addrow, textvariable=ban_var, values=_champ_names, width=18,
-                          style="Fav.TCombobox", font=skin.body(SMALL))
-    ban_cb.pack(side="left")
-    ban_listfr = tk.Frame(banfr.body, bg=SURFACE)
-    ban_listfr.pack(fill="x", padx=8, pady=(0, 8))
-    ban_list = tk.Listbox(ban_listfr, height=4, bg=SUNKEN, fg=TXT, selectbackground=HOVER,
-                          selectforeground=TXT, relief="flat", highlightthickness=0, bd=0,
-                          font=skin.mono(SMALL), activestyle="none")
-    ban_list.pack(side="left", fill="x", expand=True)
-    for _entry in (s.get("ban_list") or []):
-        ban_list.insert("end", _entry)
-
-    def _filter_bans(_e=None):
-        t = ban_var.get().strip().lower()
-        ban_cb["values"] = [n for n in _champ_names if t in n.lower()] if t else _champ_names
-
-    def _add_ban(_e=None):
-        nm = _canon(ban_var.get())
-        if not nm:
-            return
-        if nm.lower() not in [ban_list.get(i).lower() for i in range(ban_list.size())]:
-            ban_list.insert("end", nm)
-        ban_var.set("")
-        ban_cb["values"] = _champ_names
-
-    def _rm_ban():
-        sel = ban_list.curselection()
-        if sel:
-            ban_list.delete(sel[0])
-
-    def _move_ban(delta):
-        sel = ban_list.curselection()
-        if not sel:
-            return
-        i = sel[0]
-        j = i + delta
-        if 0 <= j < ban_list.size():
-            v = ban_list.get(i)
-            ban_list.delete(i)
-            ban_list.insert(j, v)
-            ban_list.selection_set(j)
-
-    skin.button(ban_addrow, "+ Add", _add_ban).pack(side="left", padx=(6, 0))
-    ban_cb.bind("<KeyRelease>", _filter_bans)
-    ban_cb.bind("<Return>", _add_ban)
-    banbtns = tk.Frame(ban_listfr, bg=SURFACE)
-    banbtns.pack(side="left", fill="y", padx=(6, 0))
-    skin.button(banbtns, "Remove", _rm_ban).pack(fill="x", pady=1)
-    skin.button(banbtns, "↑", lambda: _move_ban(-1)).pack(fill="x", pady=1)
-    skin.button(banbtns, "↓", lambda: _move_ban(1)).pack(fill="x", pady=1)
 
     skin.section_rule(body, "YOUR ACCOUNTS").pack(fill="x", padx=18, pady=(12, 2))
     tk.Label(body, text="One Riot ID per line (Name#TAG). Accounts you log into are remembered "
@@ -820,7 +716,6 @@ def main():
     status.pack(anchor="w", padx=18, pady=(6, 0))
 
     def save():
-        bans = [ban_list.get(i) for i in range(ban_list.size())]
         try:
             ls.save_accounts([ln.strip() for ln in acc_text.get("1.0", "end").splitlines() if ln.strip()])
         except Exception:
@@ -843,18 +738,16 @@ def main():
                   "death_brief": deadbrief.get(),
                   "loading_scout": loadbrief.get(),
                   "dodge_alerts": dodge.get(), "dock_champ_select": dock.get(),
-                  "auto_import": autoimp.get(), "auto_ban": autoban.get(),
-                  "ban_list": bans, "board_topmost": boardtop.get(),
-                  "auto_accept": autoq.get(), "auto_mute": automute.get(),
+                  "auto_import": autoimp.get(),
+                  "board_topmost": boardtop.get(),
+                  "auto_mute": automute.get(),
                   "max_elo": maxelo_on["v"],
                   "max_elo_main": _canon(maxelo_main.get()) or "",
                   "max_elo_backup": _canon(maxelo_back.get()) or "",
                   "flash_on_d": (flash_side.get() == 0),
                   "solo_coaching": solocoach.get(),
                   "draft_link": draftlink.get(), "draft_autoopen": draftopen.get(),
-                  "draft_db": db_entry.get().strip(),
-                  "auto_swap_roles": [r for r in cfg.SWAP_ROLES if swapvars[r].get()],
-                  "auto_pick_swap": ("" if pickswap.get() == "off" else pickswap.get())})
+                  "draft_db": db_entry.get().strip()})
         cfg.set_auto_open(auto.get())
         cfg.set_home_on_start(homeonstart.get())
         cfg.set_autostart(startwin.get())
@@ -872,16 +765,9 @@ def main():
                   auto, homeonstart,
                   solocoach, draftlink, draftopen, automute, boardtop):
             v.set(True)
-        for v in (autoq, autoimp, autoban):      # off-by-default automations stay off
-            v.set(False)
+        autoimp.set(False)                       # off by default: runes only on your say-so
         flash_side.set(0)
         _upd_flash()
-        try:
-            for var in swapvars.values():
-                var.set(False)
-            pickswap.set("off")
-        except Exception:
-            pass
         # startwin (Start with Windows) is deliberately untouched — Reset must never
         # silently re-arm a registry autostart
         status.config(text="reset to defaults - click Save to apply", fg=MUTED)

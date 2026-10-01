@@ -515,12 +515,6 @@ def main():
                             cfg.save(s)
                             status.config(text=f"auto-import {'ON — runes+summs apply on lock' if s['auto_import'] else 'off'}",
                                           fg=skin.GOOD if s["auto_import"] else skin.MUTED)
-                        elif url == "action:toggle_auto_ban":
-                            s = cfg.load()
-                            s["auto_ban"] = not s.get("auto_ban", False)
-                            cfg.save(s)
-                            status.config(text=f"auto-ban {'ON — locks the top ban on your turn' if s['auto_ban'] else 'off'}",
-                                          fg=skin.GOOD if s["auto_ban"] else skin.MUTED)
                     else:
                         webbrowser.open(url)
                     break

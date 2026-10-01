@@ -4,7 +4,7 @@
 v0.9.70 gave every *habit* in your ledger a price in LP and named the one worth fixing. This
 module does the same job for the other half of the climb - and, by the app's own north star,
 the bigger half: **which champions you queue.** Champion-pool discipline is the highest-
-confidence lever in ranked; MAX ELO has enforced a pool since the day it shipped without the
+confidence lever in ranked; CLIMB MODE (once MAX ELO) has reminded you of a pool without the
 app ever telling you what the pool should BE. The profile's answer was three raw win-rate
 bullets ("play more Sett 58%"), computed by their own separate math, which meant the profile
 and the champ-select recommender could disagree about the same champion. That is now one read.

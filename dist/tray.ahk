@@ -19,7 +19,6 @@ ICO := A_ScriptDir "\assets\smiteless.ico"
 NOAUTO := EnvGet("USERPROFILE") "\.claude\smiteless_noautoopen"   ; present = auto-open OFF
 NOHOME := EnvGet("USERPROFILE") "\.claude\smiteless_nohomeonstart" ; present = open profile/home at startup OFF
 UPDATED_MARK := A_ScriptDir "\.updated_version"
-SETTINGS := EnvGet("USERPROFILE") "\.claude\smiteless_settings.json"   ; read to gate auto-accept
 ; GitHub repo ("owner/name") whose Releases this copy updates from. EMPTY = updates OFF:
 ; nothing is checked, downloaded or run. Must match REPO in tools\smiteupdate.py.
 UPDATE_REPO := ""
@@ -191,31 +190,10 @@ SetTimer(CheckUpdate, 5 * 60 * 1000)           ; then every 5 minutes
 SetTimer(AutoUpdateOnLaunch, -7000)            ; auto-apply update attempt on launch
 SetTimer((*) => Launch("keycheck"), -20000)    ; expired Riot dev key? -> paste-a-new-one prompt
 SetTimer(OpenHomeOnStartup, -9000)             ; open profile/home shortly after startup
-SetTimer(AutoAcceptTick, 1200)                 ; poll ready-check and auto-accept if enabled
-
-AutoAcceptTick() {
-    ; Auto-accept entirely IN-PROCESS via the League client's local API - no app launch, so
-    ; there's no busy-cursor flash (spawning the windowed app every poll was the flicker).
-    if (!AutoAcceptOn())
-        return
-    if (!ProcessExist("LeagueClientUx.exe") && !ProcessExist("LeagueClient.exe"))
-        return
-    r := LcuReq("GET", "/lol-matchmaking/v1/ready-check")
-    if (InStr(r, '"state":"InProgress"') && InStr(r, '"playerResponse":"None"'))
-        LcuReq("POST", "/lol-matchmaking/v1/ready-check/accept")
-}
-
-AutoAcceptOn() {
-    global SETTINGS
-    try {
-        return RegExMatch(FileRead(SETTINGS), '"auto_accept"\s*:\s*true') > 0
-    }
-    return false                                   ; no settings file / never enabled -> off
-}
 
 ; ---- talk to the League client's local API (LCU) directly, so the tray never has to spawn
-;      the app just to poll. Reads the lockfile for the port+password, ignores the client's
-;      self-signed cert, and uses HTTP Basic auth. ----
+;      the app just to poll the phase. Reads the lockfile for the port+password, ignores the
+;      client's self-signed cert, and uses HTTP Basic auth. Read-only: GET requests only. ----
 LcuLockfile() {
     for d in StrSplit("FCDEGH", "") {
         p := d ":\Riot Games\League of Legends\lockfile"

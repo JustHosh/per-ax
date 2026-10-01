@@ -70,14 +70,6 @@ def _watcher():
                 opened = False                   # any non-active phase re-arms for next game
         else:
             opened = False
-        if ph == "ReadyCheck":
-            # the auto-accept SETTING existed but nothing ever polled it — the tray is
-            # the always-running process, so it owns the accept now
-            try:
-                import lolautoaccept
-                lolautoaccept.try_accept()
-            except Exception:
-                pass
         _stop.wait(2)
 
 
