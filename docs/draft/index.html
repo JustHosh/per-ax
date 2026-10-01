@@ -318,13 +318,13 @@ footer{margin-top:30px;color:var(--faint);font-size:12px;display:flex;gap:8px;
     <span class="chip" id="status"><span class="dot"></span><span id="statustxt">connecting</span></span>
   </header>
   <p class="tagline" id="tagline">Sent from champ select by a teammate running
-    <a href="https://github.com/bobbyroylee/smiteless" rel="noopener">Smiteless</a> (free, open
+    <a class="repolink" href="#" rel="noopener">Smiteless</a> (free, open
     source). Hit <b style="color:var(--ember)">This is me</b> on your seat for picks &amp; runes
     tuned to this draft — it updates live as the lobby locks in.</p>
   <div id="app"></div>
   <footer>
     <span>No accounts, no tracking — this page only reads the draft your teammate published.</span>
-    <span>·</span><a href="https://github.com/bobbyroylee/smiteless" rel="noopener">get Smiteless</a>
+    <span>·</span><a class="repolink" href="#" rel="noopener">get Smiteless</a>
   </footer>
 </div>
 
@@ -335,7 +335,7 @@ const DD = "https://ddragon.leagueoflegends.com";
 /* This page's own Firebase — so the shared link can be just "#d=ID" (short + not sketchy)
    instead of carrying "&db=host.firebaseio.com". A self-hoster with a different DB still
    works: the link just includes &db= and it overrides this default. */
-const DEFAULT_DB = "smiteless-draft-default-rtdb.firebaseio.com";
+const DEFAULT_DB = "";   // bake YOUR Firebase host in here (and in loldraft._DEFAULT_PAGE_DB)
 const H = (() => {
   const out = {d:"", db:"", demo:location.hash.replace("#","") === "demo", me:false};
   for (const kv of location.hash.replace(/^#/,"").split("&")) {
@@ -349,6 +349,14 @@ const H = (() => {
   return out;
 })();
 const dbOk = h => /^[a-z0-9.-]+\.(firebaseio\.com|firebasedatabase\.app)$/i.test(h || "");
+/* The repo that hosts THIS page (owner.github.io/repo/... -> github.com/owner/repo), so the
+   "get it" links follow whoever publishes the page instead of naming one fixed repo. */
+const REPO_URL = (() => {
+  const owner = location.hostname.endsWith(".github.io") ? location.hostname.split(".")[0] : "";
+  const repo = location.pathname.split("/").filter(Boolean)[0] || "";
+  return owner && repo ? `https://github.com/${owner}/${repo}` : "#";
+})();
+for (const a of document.querySelectorAll("a.repolink")) a.href = REPO_URL;
 
 const ROLES = {top:"TOP", jungle:"JG", mid:"MID", adc:"BOT", support:"SUP"};
 const ROLE_FULL = {top:"Top", jungle:"Jungle", mid:"Mid", adc:"Bot / ADC", support:"Support"};
@@ -713,7 +721,7 @@ function render(){
     if (sub) sub.textContent = "live scout";
     if (tag) tag.innerHTML = "The whole lobby, scouted — rank, recent form, and how each "
       + "account actually plays, read from public match history. Shared from "
-      + '<a href="https://github.com/bobbyroylee/smiteless" rel="noopener">Smiteless</a>.';
+      + '<a class="repolink" href="' + REPO_URL + '" rel="noopener">Smiteless</a>.';
     const th = hasScout ? p.scout.threat : null;
     if (threat){
       if (th && th.c){

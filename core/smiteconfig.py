@@ -159,7 +159,7 @@ STRINGS = {"max_elo_main": "",      # CLIMB MODE: the champion you queue for (''
            "max_elo_backup": "",    # ... and the one you go to when the main is banned/taken
            "region": DEFAULT_REGION,  # Riot platform id, a key of REGIONS (Settings -> Region)
            "draft_db": "",
-           "draft_page": "https://bobbyroylee.github.io/smiteless/draft/",
+           "draft_page": "",       # YOUR GitHub Pages copy of docs/draft/ ('' = dormant)
            "draft_msg": ""}
 
 

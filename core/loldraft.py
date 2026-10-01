@@ -11,8 +11,9 @@ Costs nothing to run: the page is static hosting, the data channel is Firebase's
 Spark tier, and everything heavy (art, names) comes from Riot's public ddragon CDN in
 the viewer's browser. This module only ships a few KB of champion/rune IDs.
 
-Setup (one-time, see docs/DRAFTLINK.md): create a free Firebase RTDB, paste its URL
-into Settings -> "Draft link database". No URL = the whole feature stays dormant.
+Setup (one-time, see docs/DRAFTLINK.md): create a free Firebase RTDB, host docs/draft/ on
+your repo's GitHub Pages, and paste both URLs into Settings -> LIVE DRAFT LINK. Either one
+missing = the whole feature stays dormant.
 
 CLI (manual seeding / testing, no lobby needed):
   python loldraft.py test        # publish a fake draft, print the link to open
@@ -52,10 +53,11 @@ SUGG_PER_SEAT = 3          # suggestion cards per seat (each carries runes -> ke
 PUBLISH_POLL = 2.0         # seconds between champ-select reads
 _ID_ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789"   # unambiguous, URL-safe
 
-# The DB host baked into the hosted page (docs/draft/index.html DEFAULT_DB). When the
+# The DB host baked into YOUR hosted page (docs/draft/index.html DEFAULT_DB). When the
 # user's DB IS this one, the shared link can omit "&db=host.firebaseio.com" entirely and
-# be just "…/draft/#d=ID" — short and not phishing-shaped. Keep the two in sync.
-_DEFAULT_PAGE_DB = "smiteless-draft-default-rtdb.firebaseio.com"
+# be just "…/draft/#d=ID" — short and not phishing-shaped. Keep the two in sync. Empty
+# until you bake your own database in: every link then carries &db=<host>.
+_DEFAULT_PAGE_DB = ""
 BRAND = "DraftBoard"       # the shareable feature's identity (chat message + page)
 
 
@@ -92,7 +94,7 @@ def link_for(draft_id, settings=None):
     db = _db_url(settings)
     host = db.split("://", 1)[1] if db else ""
     base = f"{_page_url(settings)}/#d={draft_id}"
-    return base if host == _DEFAULT_PAGE_DB else f"{base}&db={host}"
+    return base if (host and host == _DEFAULT_PAGE_DB) else f"{base}&db={host}"
 
 
 # ---------- Firebase REST (stdlib only; the DB is public per its rules, auth-free) ----------
@@ -530,7 +532,7 @@ def tick(dd):
     """Called from the overlay's champ-select loop. Spawns the publisher for this lobby
     (once) and returns immediately; a no-op when the feature isn't configured/enabled."""
     settings = cfg.load()
-    if not settings.get("draft_link", True) or not _db_url(settings):
+    if not settings.get("draft_link", True) or not _db_url(settings) or not _page_url(settings):
         return
     with _LOCK:
         if _ST["thread"] is not None:

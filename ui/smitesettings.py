@@ -594,7 +594,8 @@ def main():
     skin.section_rule(body, "LIVE DRAFT LINK").pack(fill="x", padx=18, pady=(12, 2))
     tk.Label(body, text="Posts ONE link into champ-select chat; anyone who clicks it sees the live "
              "draft with pick suggestions + runes per seat. Needs your own free Firebase Realtime "
-             "Database URL (5-minute setup, $0 — see docs/DRAFTLINK.md). Empty = off.",
+             "Database and your repo's GitHub Pages copy of docs/draft/ (see docs/DRAFTLINK.md). "
+             "Either one empty = off.",
              bg=VOID, fg=MUTED, font=skin.body(SMALL), justify="left",
              anchor="w", wraplength=430).pack(fill="x", padx=18, pady=(0, 2))
     dbfr = skin.card(body, rail=LINE)
@@ -607,6 +608,14 @@ def main():
                         font=skin.mono(SMALL))
     db_entry.pack(side="left", fill="x", expand=True, padx=(6, 0), ipady=3)
     db_entry.insert(0, s.get("draft_db", ""))
+    pgrow = tk.Frame(dbfr.body, bg=SURFACE)
+    pgrow.pack(fill="x", padx=10, pady=(4, 2))
+    tk.Label(pgrow, text="Page URL:", bg=SURFACE, fg=MUTED,
+             font=skin.body(SMALL)).pack(side="left")
+    page_entry = tk.Entry(pgrow, bg=SUNKEN, fg=TXT, insertbackground=TXT, relief="flat",
+                          font=skin.mono(SMALL))
+    page_entry.pack(side="left", fill="x", expand=True, padx=(6, 0), ipady=3)
+    page_entry.insert(0, s.get("draft_page", ""))
     db_status = tk.Label(dbfr.body, text="", bg=SURFACE, fg=MUTED, font=skin.body(SMALL),
                          anchor="w", justify="left")
     db_status.pack(fill="x", padx=12, pady=(2, 8))
@@ -619,11 +628,14 @@ def main():
         def work():
             try:
                 import loldraft as ldr
-                cfg.save({"draft_db": db_entry.get().strip()})
+                cfg.save({"draft_db": db_entry.get().strip(),
+                          "draft_page": page_entry.get().strip()})
                 dbu = ldr._db_url()
                 if not dbu:
                     raise RuntimeError("that doesn't look like a firebaseio.com / "
                                        "firebasedatabase.app URL")
+                if not ldr._page_url():
+                    raise RuntimeError("add the Page URL (your GitHub Pages copy of docs/draft/)")
                 dd = _lb.ddragon()
                 did = ldr._new_id()
                 ldr.publish(dbu, did, ldr.build_payload(dd, ldr._demo(dd)))
@@ -639,9 +651,10 @@ def main():
 
     dbbtns = tk.Frame(dbfr.body, bg=SURFACE)
     dbbtns.pack(fill="x", padx=10, pady=(0, 8))
-    skin.button(dbbtns, "Setup guide ↗", lambda: webbrowser.open(
-        "https://github.com/bobbyroylee/smiteless/blob/main/docs/DRAFTLINK.md")).pack(
-        side="left", padx=(0, 4))
+    _guide = os.path.join(_ROOT, "docs", "DRAFTLINK.md")
+    if os.path.exists(_guide):                   # running from source: the guide is right here
+        skin.button(dbbtns, "Setup guide ↗", lambda: webbrowser.open(_guide)).pack(
+            side="left", padx=(0, 4))
     skin.button(dbbtns, "Save + test", _test_draft, primary=True).pack(side="left", padx=4)
 
     # ---- Region: the Riot server your accounts play on (default LAN) ----
@@ -769,6 +782,7 @@ def main():
                   "solo_coaching": solocoach.get(),
                   "draft_link": draftlink.get(), "draft_autoopen": draftopen.get(),
                   "draft_db": db_entry.get().strip(),
+                  "draft_page": page_entry.get().strip(),
                   "region": _region_code()})
         cfg.set_auto_open(auto.get())
         cfg.set_home_on_start(homeonstart.get())
