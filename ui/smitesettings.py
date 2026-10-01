@@ -106,6 +106,11 @@ def main():
         _st.theme_use("clam")
         _st.configure("Fav.TCombobox", fieldbackground=SUNKEN, background=RAISED, foreground=TXT,
                       arrowcolor=TXT, bordercolor=RAISED, lightcolor=RAISED, darkcolor=RAISED)
+        # clam paints a READONLY combobox (the Region picker) light grey with grey text unless
+        # the readonly state is mapped explicitly
+        _st.map("Fav.TCombobox", fieldbackground=[("readonly", SUNKEN)],
+                foreground=[("readonly", TXT)], selectbackground=[("readonly", SUNKEN)],
+                selectforeground=[("readonly", TXT)])
         root.option_add("*TCombobox*Listbox.background", SUNKEN)
         root.option_add("*TCombobox*Listbox.foreground", TXT)
         root.option_add("*TCombobox*Listbox.selectBackground", HOVER)
@@ -588,7 +593,10 @@ def main():
     afr.pack(fill="x", padx=16, pady=(0, 0))
     _chk(afr, "Auto-open at champ select", auto).pack(side="left")
     _chk(afr, "Open profile/home on startup", homeonstart).pack(side="left", padx=(18, 0))
-    _chk(afr, "Start with Windows", startwin).pack(side="left", padx=(18, 0))
+    afr2 = tk.Frame(body, bg=VOID)                # own row: three across clipped the last one
+    afr2.pack(fill="x", padx=16, pady=(0, 0))
+    _chk(afr2, "Start with Windows (needed to open by itself at champ select)",
+         startwin).pack(side="left")
 
     # ---- Live draft link: the shareable champ-select board (docs/DRAFTLINK.md) ----
     skin.section_rule(body, "LIVE DRAFT LINK").pack(fill="x", padx=18, pady=(12, 2))
