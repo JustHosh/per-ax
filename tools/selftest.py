@@ -1150,12 +1150,15 @@ def fixture_game(legend_ids, nonlegend):
                       "gameStartTimestamp": 1_700_000_000_000, "participants": parts}}
     frames = [{"timestamp": m * 60000, "events": [],
                "participantFrames": {str(pid): {"totalGold": 500 + m * 300 + (40 * m if pid == 1 else 0),
-                                                "level": min(18, 1 + m // 2) + (1 if pid == 1 and m >= 8 else 0)}
+                                                "level": min(18, 1 + m // 2) + (1 if pid == 1 and m >= 8 else 0),
+                                                "position": {"x": 1000 * m + pid, "y": 7000}}
                                      for pid in range(1, 11)}} for m in range(31)]
 
     def ev(ms, typ, pid, **kw):
         frames[ms // 60000]["events"].append(dict(type=typ, timestamp=ms, participantId=pid, **kw))
     ev(30000, "ITEM_PURCHASED", 1, itemId=nonlegend)
+    ev(200000, "CHAMPION_KILL", 0, killerId=7, victimId=1, assistingParticipantIds=[],
+       position={"x": 2000, "y": 11000})                    # 3:20 their jungler ganks top
     ev(510000, "ITEM_PURCHASED", 1, itemId=A)               # 8:30 1st legendary
     ev(540000, "ITEM_PURCHASED", 6, itemId=B)               # 9:00 the lane opponent's 1st
     ev(720000, "ITEM_PURCHASED", 1, itemId=C)               # 12:00 bought...
@@ -1252,6 +1255,9 @@ def c_collector():
         return FAIL, f"context at the purchase wrong: {first}"
     if len(first["enemies"].split(",")) != 5 or first["win"] != 1:
         return FAIL, "enemy comp / result missing from a decision row"
+    jg = {r["pid"]: (r["path"].split(";")[0], r["first_gank"], r["opp"]) for r in ex["jungle"]}
+    if jg != {2: ("1002,7000", "", 107), 7: ("1007,7000", "3.3,top", 102)}:
+        return FAIL, f"jungle paths wrong: {jg}"
     blob = json.dumps(ex)
     if "secret-" in blob or "Player" in blob:
         return FAIL, "a stored row carries a player's PUUID or name"

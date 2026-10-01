@@ -67,6 +67,9 @@ CREATE TABLE IF NOT EXISTS decisions (
     enemy_items TEXT, gold_diff INTEGER, level_diff INTEGER, win INTEGER, patch TEXT,
     PRIMARY KEY (match_id, pid, seq));
 CREATE INDEX IF NOT EXISTS decisions_champ_role ON decisions(champ, role);
+CREATE TABLE IF NOT EXISTS jungle_paths (
+    match_id TEXT, pid INTEGER, team INTEGER, champ INTEGER, opp INTEGER, win INTEGER,
+    path TEXT, first_gank TEXT, patch TEXT, PRIMARY KEY (match_id, pid));
 """
 
 Rec = namedtuple("Rec", "item score games scope why")

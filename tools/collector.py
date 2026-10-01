@@ -12,7 +12,9 @@ Pipeline - resumable: stop it whenever you like, the next run continues where it
   3. match-v5 match + timeline: per game, one row per player (champion, role, lane opponent,
      result, physical/magic damage to champions) and one row per COMPLETED LEGENDARY - the
      decision the recommender learns: slot, minute, what that player, their lane opponent and
-     the enemy team had already finished, and the gold/level gap to the opponent then.
+     the enemy team had already finished, and the gold/level gap to the opponent then. Each
+     jungler also gets their position at minutes 1-5 and their first early gank (for the
+     pre-game jungle routes of a later phase: collected now so nothing needs a re-crawl).
 Nothing identifying the players in those games is stored (no names, no PUUIDs); only the seed
 list keeps ladder PUUIDs, so a crawl can resume.
 
@@ -53,6 +55,8 @@ APEX = {"MASTER": "masterleagues", "GRANDMASTER": "grandmasterleagues",
 DIVISIONS = ("I", "II", "III", "IV")
 ROLE = {"TOP": "top", "JUNGLE": "jungle", "MIDDLE": "mid", "BOTTOM": "adc", "UTILITY": "support"}
 MIN_DURATION = 600          # seconds: anything shorter is a remake, not a build decision
+PATH_MINUTES = range(1, 6)  # jungler positions kept at these minutes (the opening clear)
+GANK_BEFORE_MS = 360000     # an early gank = a kill or assist by the jungler before 6:00
 IDS_PER_SEED = 20
 DEV_LIMITS = ((20, 1), (100, 120))   # a development key's app limits, until headers say otherwise
 SAFETY = 0.9                # use this share of every limit: room for the app's scout on the same key
@@ -218,6 +222,13 @@ def _ids(items):
     return ",".join(str(i) for i in sorted(items))
 
 
+def map_side(x, y):
+    """Which side of Summoner's Rift a point is on: blue base is bottom-left, red base top-right,
+    top lane hugs the left/top edges, bot lane the bottom/right ones, mid the diagonal."""
+    d = y - x
+    return "top" if d > 3000 else ("bot" if d < -3000 else "mid")
+
+
 def _drop_last(seq, value):
     for k in range(len(seq) - 1, -1, -1):
         if seq[k] == value:
@@ -272,7 +283,8 @@ def extract(match, timeline, legend):
 
     held = {pid: [] for pid in by_pid}
     rows = []
-    for ev in (e for f in frames for e in (f.get("events") or [])):
+    events = [e for f in frames for e in (f.get("events") or [])]
+    for ev in events:
         typ, pid = ev.get("type"), ev.get("participantId")
         if pid not in held:
             continue
@@ -308,10 +320,27 @@ def extract(match, timeline, legend):
               "magic": int(p.get("magicDamageDealtToChampions") or 0),
               "true_dmg": int(p.get("trueDamageDealtToChampions") or 0), "patch": patch}
              for pid, p in by_pid.items()]
+    jungle = []
+    for pid in (q for q in by_pid if role[q] == "jungle"):
+        pts = []
+        for m in PATH_MINUTES:
+            pos = (((frames[m].get("participantFrames") or {}).get(str(pid)) or {}).get("position")
+                   if m < len(frames) else None) or {}
+            if "x" in pos and "y" in pos:
+                pts.append(f"{int(pos['x'])},{int(pos['y'])}")
+        gank = next((f"{e['timestamp'] / 60000.0:.1f},{map_side(e['position']['x'], e['position']['y'])}"
+                     for e in events
+                     if e.get("type") == "CHAMPION_KILL" and (e.get("timestamp") or 0) < GANK_BEFORE_MS
+                     and "x" in (e.get("position") or {})
+                     and (e.get("killerId") == pid or pid in (e.get("assistingParticipantIds") or []))),
+                    "")
+        jungle.append({"match_id": mid, "pid": pid, "team": team[pid], "champ": champ[pid],
+                       "opp": champ[opp[pid]], "win": win[pid], "path": ";".join(pts),
+                       "first_gank": gank, "patch": patch})
     start = int(info.get("gameStartTimestamp") or info.get("gameCreation") or 0) // 1000
     return {"match": {"match_id": mid, "patch": patch, "game_start": start,
                       "duration": int(info.get("gameDuration") or 0)},
-            "participants": parts, "decisions": rows}
+            "participants": parts, "decisions": rows, "jungle": jungle}
 
 
 def store(con, ex):
@@ -329,6 +358,10 @@ def store(con, ex):
             "(:match_id, :pid, :seq, :slot, :champ, :role, :opp, :enemies, :item, :minute, "
             ":prev, :opp_items, :enemy_items, :gold_diff, :level_diff, :win, :patch)",
             ex["decisions"])
+        con.executemany(
+            "INSERT OR REPLACE INTO jungle_paths (match_id, pid, team, champ, opp, win, path, "
+            "first_gank, patch) VALUES (:match_id, :pid, :team, :champ, :opp, :win, :path, "
+            ":first_gank, :patch)", ex.get("jungle") or [])
         con.execute("INSERT INTO matches (match_id, status) VALUES (?, 'done') "
                     "ON CONFLICT(match_id) DO UPDATE SET status = 'done'", (m["match_id"],))
         con.execute("UPDATE matches SET patch = ?, game_start = ?, duration = ?, note = NULL, "
@@ -451,7 +484,7 @@ def purge(con, keep):
         return
     marks = ",".join("?" * len(old))
     with con:
-        for t in ("decisions", "participants", "matches"):
+        for t in ("decisions", "participants", "jungle_paths", "matches"):
             con.execute(f"DELETE FROM {t} WHERE patch IN ({marks})", old)
     con.execute("VACUUM")
     print("Borrados los parches: " + ", ".join(old))
