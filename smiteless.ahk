@@ -162,8 +162,8 @@ SmiteWatch() {
             ; LOADING SCOUT (ten splash cards) — spawns at champ select, covers the load, fades
             ; the instant the game starts. Self-gates on the `loading_scout` setting (default on).
             Run('"' PYW '" "' SCRIPTS '\ui\smiteload.py"', , "Hide")
-            ; AUTO-MUTE — armed at champ select, sends /fullmute all the instant the game
-            ; clock starts. Self-gates on the `auto_mute` setting (default on).
+            ; IN-GAME QUIET — writes League's own chat/ping settings through the client
+            ; (nothing is typed). Self-gates on the `auto_mute` setting (default on).
             Run('"' PYW '" "' SCRIPTS '\core\lolmute.py"', , "Hide")
         }
     } else {

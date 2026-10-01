@@ -314,8 +314,8 @@ SmiteWatch() {
             g_overlayOpened := true
             Launch("overlay --wait")
             Launch("load")     ; spawn at CHAMP SELECT so it's already waiting when loading begins
-            Launch("mute")     ; AUTO-MUTE: armed here, fires the instant the game clock starts
-        }                      ; (spawned at the in-game flip it often arrived after loading ended)
+            Launch("mute")     ; IN-GAME QUIET: League's own chat/ping settings, nothing typed
+        }
     } else if (!active) {
         g_overlayOpened := false
     }

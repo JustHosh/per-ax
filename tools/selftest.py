@@ -7,7 +7,7 @@ patch (in case op.gg changes shape).
 
   python selftest.py
 """
-import sys, os, time, json, ssl, urllib.request, urllib.error
+import sys, os, re, time, json, ssl, urllib.request, urllib.error
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 for _d in ("core", "ui", "tools"):            # cross-folder flat imports
     sys.path.insert(0, os.path.join(_ROOT, _d))
@@ -920,104 +920,52 @@ def c_frozen():
     return OK, f"all {len(mods)} core/ + ui/ modules are frozen into the build"
 
 
-def c_mute():
-    """AUTO-MUTE. It used to TYPE `/fullmute all` into the game and could never tell whether
-    that landed - so it claimed success for four releases while muting nobody. It now writes
-    the client's own settings, which means the state is READABLE, and this check reads it.
-    A key Riot renames must fail here rather than silently do nothing."""
+def c_quiet():
+    """IN-GAME QUIET writes League's own chat/ping settings over the LCU and reads them back.
+    It used to also TYPE `/fullmute all` into the game with synthetic keystrokes; that input
+    injection is gone for policy reasons, and this guard keeps it gone."""
     import lolmute as lm, lolgame as lg
-    # THE bug that cost four releases: Enter went out as a virtual key with wScan=0, the game
-    # reads scan codes, so chat never opened and every character hit a gameplay bind instead.
-    # A zero here means auto-mute is silently mashing keys at your champion. Guard it forever.
-    if not lm.ENTER_SCAN():
-        return FAIL, "Enter has no scan code - chat won't open and the command types into the game"
-    bad = [c for c in lm.CMD if lm.scan_of(c) is None]
-    if bad:
-        return FAIL, f"this keyboard layout can't type {bad!r}"
-    if lm.FIRE_AT < 3.0:
-        return FAIL, f"firing at gameTime {lm.FIRE_AT}s - too early, the client eats the keys"
-    # SAFETY, not tuning. Typing is only safe while you're parked in the fountain: clicking to
-    # move takes focus off League's chat box, and a character that misses it becomes a keybind
-    # ('f' in "fullmute" = Flash). v0.9.56's 25s "confirming" resend cast Flash mid-walk. There
-    # must be exactly one attempt, and it must stop before you're out on the map.
-    if hasattr(lm, "CONFIRM_AT"):
-        return FAIL, "a second mute attempt is back - it types while you're moving and casts Flash"
-    if getattr(lm, "LATE_LIMIT", 999) > 30.0:
-        return FAIL, f"still typing at gameTime {lm.LATE_LIMIT}s - you're on the map by then"
-    # THE bug that broke it in a real game: the v0.9.55 rewrite dropped the single-instance
-    # mutex, the tray re-spawns on any phase flap, and THREE copies typed into one chat box in
-    # the same second. Interleaved character by character that is garbage, not a command - and
-    # the log said TYPED three times, so it looked like success. Never again.
-    if not hasattr(lm, "_single_instance"):
-        return FAIL, "no single-instance guard - concurrent copies will interleave into garbage"
-    # Prove the SEMANTICS on a throwaway mutex. Grabbing the real one would make this check
-    # fail exactly when auto-mute is running properly, which is the wrong way round.
-    probe = "Global\\SmitelessSelftestProbe"
-    if not lm._single_instance(probe) or lm._single_instance(probe):
-        return FAIL, "the single-instance guard doesn't actually exclude a second copy"
-    if not hasattr(lm, "_SEND_LOCK"):
-        return FAIL, "no in-process send lock - two threads could interleave the command"
-    if not hasattr(lm, "player_dead"):
-        return FAIL, "no death-window retry - a missed fountain attempt would never recover"
-    detail = f"Enter=0x{lm.ENTER_SCAN():02x}, {lm.CMD!r} all mappable"
+    for gone in ("send_fullmute", "CMD", "_InputGuard", "scan_of"):
+        if hasattr(lm, gone):
+            return FAIL, f"lolmute.{gone} is back - in-game quiet must never type into the game"
+    if set(lm.MUTED) != set(lm.UNMUTED) or any(set(lm.MUTED[g]) != set(lm.UNMUTED[g])
+                                               for g in lm.MUTED):
+        return FAIL, "MUTED and UNMUTED cover different settings - 'off' would not undo 'on'"
     if not lg._lcu():
-        return OK, detail + "; client down, settings layer unverified"
+        return OK, "settings only, nothing typed; client down, settings layer unverified"
     st = lm.read_state()
     if st is None:
         return FAIL, "the client no longer exposes " + ", ".join(
             f"{g}.{k}" for g, ks in lm.MUTED.items() for k in ks)
     on = all(st.get(f"{g}.{k}") == v for g, ks in lm.MUTED.items() for k, v in ks.items())
-    return OK, detail + f"; settings {'MUTED' if on else 'unmuted'}"
+    return OK, f"settings only, nothing typed; settings {'MUTED' if on else 'unmuted'}"
 
 
-def c_muteguard():
-    """The input guard that makes auto-mute's typing safe to sit through. It must tell YOUR
-    hands apart from our injected keys (via the LLKHF_INJECTED / LLMHF_INJECTED flags) — if it
-    can't, it either aborts on its own keystrokes and never mutes, or misses yours and lets a
-    keypress shred the command. Mouse MOVEMENT must be ignored: the cursor is never still, and
-    moving it doesn't defocus League's chat box; only a click does."""
-    import lolmute as lm
-    G = lm._InputGuard
-    import ctypes
-    from ctypes import wintypes
+_INPUT_APIS = ("SendInput", "keybd_event", "mouse_event", "SetWindowsHookEx")
+_AHK_SEND = re.compile(r"(?mi)^\s*(?:Send|SendInput|SendEvent|SendPlay|SendText|ControlSend)\b")
 
-    def fire(kind, wparam, flags):
-        g = G()
-        idx, mask, skip = ((2, G._LLKHF_INJECTED, ()) if kind == "kb"
-                           else (3, G._LLMHF_INJECTED, G._HARMLESS_MOUSE))
-        proc = g._make(mask, idx, skip)
-        buf = (wintypes.DWORD * 8)(*([0] * 8))
-        buf[idx] = flags
-        proc(0, wparam, ctypes.cast(ctypes.pointer(buf), ctypes.c_void_p).value)
-        return g.interrupted
 
-    cases = [("real keypress", "kb", 0x0100, 0x00, True),
-             ("our injected key", "kb", 0x0100, 0x10, False),
-             ("mouse move", "ms", 0x0200, 0x00, False),
-             ("mouse wheel", "ms", 0x020A, 0x00, False),
-             ("real left click", "ms", 0x0201, 0x00, True),
-             ("real right click", "ms", 0x0204, 0x00, True),
-             ("our injected click", "ms", 0x0201, 0x01, False)]
-    bad = [n for n, k, w, f, want in cases if fire(k, w, f) != want]
-    if bad:
-        return FAIL, "input guard wrong on: " + ", ".join(bad)
-    # The live half only means anything if YOU aren't typing during it — otherwise it's your
-    # keyboard tripping the guard, which is the guard working. Skip it rather than cry wolf.
-    if lm.idle_ms() < 400:
-        return OK, "discrimination matrix passes (live check skipped - you're using the keyboard)"
-    with G() as g:                                   # and it must not trip on our own typing
-        time.sleep(0.1)
-        sh = lm._u32.MapVirtualKeyW(0x10, 0)
-        for _ in range(8):
-            lm._tap_scan(sh, 0.02)
-            time.sleep(0.02)
-        time.sleep(0.15)
-        self_trip = g.interrupted
-    if g._hooks:
-        return FAIL, "low-level hooks left installed after the guard exited"
-    if self_trip and lm.idle_ms() > 400:
-        return FAIL, "the guard trips on our OWN injected keys - it would abort every time"
-    return OK, "tells your keys/clicks from ours; ignores mouse movement; hooks released"
+def c_noinput():
+    """The app READS the game; it never plays it. No module may synthesize keyboard/mouse
+    input or hook the user's input - that is automation Riot's third-party policy rules out,
+    and the old auto-mute and password autofill did exactly that. A tripwire over every
+    source file, Python and AutoHotkey alike."""
+    hits = []
+    for d in ("core", "ui", "tools"):
+        folder = os.path.join(_ROOT, d)
+        for f in sorted(os.listdir(folder)):
+            if not f.endswith(".py") or f == "selftest.py":
+                continue
+            src = open(os.path.join(folder, f), encoding="utf-8").read()
+            hits += [f"{d}/{f}: {api}" for api in _INPUT_APIS if api in src]
+    for rel in ("smiteless.ahk", os.path.join("dist", "tray.ahk"),
+                os.path.join("dist", "installer.ahk")):
+        p = os.path.join(_ROOT, rel)
+        if os.path.exists(p) and _AHK_SEND.search(open(p, encoding="utf-8").read()):
+            hits.append(f"{rel}: Send")
+    if hits:
+        return FAIL, "input injection/hooks found: " + ", ".join(hits[:4])
+    return OK, "no module synthesizes or hooks keyboard/mouse input"
 
 
 def c_fit():
@@ -1220,8 +1168,8 @@ def main():
         ("THE ONE FIX (leak board)", c_onefix),
         ("THE POOL (champions in LP)", c_pool),
         ("Frozen build (hidden imports)", c_frozen),
-        ("Auto-mute (chat + settings)", c_mute),
-        ("Auto-mute input guard", c_muteguard),
+        ("In-game quiet (settings only)", c_quiet),
+        ("No input injection (reads only)", c_noinput),
         ("Personal fit (your results)", c_fit),
         ("Adaptive runes (comp-aware)", c_runes),
         ("MAX ELO (one-switch arming)", c_maxelo),

@@ -105,8 +105,8 @@ BOOLS = {"matchup_tips": True,    # generate the AI lane tip in champ-select/in-
          "auto_import": False,    # import runes+summs AUTOMATICALLY when you lock a champ
          "auto_ban": False,       # champ select: auto-lock the top recommended ban on your ban turn
          "auto_accept": False,    # auto-accept queue ready checks
-         "auto_mute": True,       # in-game: send `/fullmute all` (chat + pings, everyone) the
-                                  #   moment the game clock starts — core/lolmute
+         "auto_mute": True,       # in-game quiet: League's own chat/ping settings, written
+                                  #   through the client and read back, nothing typed — core/lolmute
          "flash_on_d": True,      # import puts Flash on D (off = put Flash on F)
          "solo_coaching": True,   # profile/climb/session coaching from RANKED SOLO games only
          "draft_link": True,      # champ select: publish the live draft board + post the link in chat
