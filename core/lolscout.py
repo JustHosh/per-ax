@@ -24,6 +24,7 @@ for _d in ("core", "ui", "tools"):            # cross-folder flat imports
 import lolbuild as lb
 import lolgame as lg
 import lolugg as ugg              # u.gg match-history fallback (Riot Match-V5 fails often)
+import smiteconfig as cfg
 import smitepaths as sp
 
 try:
@@ -31,8 +32,10 @@ try:
 except Exception:
     pass
 
-REGIONAL = "americas"      # match-v5 + account-v1 (regional routing)
-PLATFORM = "na1"           # summoner-v4 + league-v4 (platform routing)
+# Settings -> Region (default LAN). Read once per process: windows are short-lived processes,
+# so a change applies the next time one opens.
+PLATFORM, REGIONAL, _SITE = cfg.routing()       # summoner/league/mastery-v4 | match-v5
+ACCOUNT_REGIONAL = "asia" if REGIONAL == "sea" else REGIONAL   # account-v1 has no "sea"
 CACHE = sp.cache("riot")
 IDS_TTL = 600          # re-pull a player's match-id list at most every 10 min
 RANK_TTL = 1800        # re-pull a player's rank at most every 30 min
@@ -106,7 +109,7 @@ def save_key(key):
 
 
 def key_ok(key):
-    """Quick key-validity check via lol-status on the PLATFORM host (na1), which is not
+    """Quick key-validity check via lol-status on the PLATFORM host (e.g. la1), which is not
     Cloudflare-gated like the regional host. True = valid, False = genuinely rejected,
     None = couldn't tell (network). Lets us distinguish a bad key from a transient 403."""
     if not key:
@@ -692,7 +695,7 @@ def resolve_puuid(riot_id, key):
             pass
     import urllib.parse
     name, tag = riot_id.rsplit("#", 1)
-    d = _get(f"https://{REGIONAL}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/"
+    d = _get(f"https://{ACCOUNT_REGIONAL}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/"
              f"{urllib.parse.quote(name)}/{urllib.parse.quote(tag)}", key)
     if isinstance(d, dict) and d.get("puuid"):
         try:

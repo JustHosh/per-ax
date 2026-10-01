@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """lolugg.py — u.gg match-history FALLBACK for the scout.
 
-Riot's Match-V5 API lives on the regional host (americas.api.riotgames.com), which
+Riot's Match-V5 API lives on the regional host (e.g. americas.api.riotgames.com), which
 Cloudflare-blocks or rate-limits often enough that the scout sometimes sees ZERO recent
 games for a player who very much has them — the loading board then reads "no recent
 ranked" for the whole lobby. u.gg runs its own match indexer, so when Riot's history
@@ -17,10 +17,11 @@ Endpoint + response shape verified live against u.gg's public GraphQL API
 (POST https://u.gg/api) — see docs / the getPlayerMatchSummaries operation.
 """
 import os, json, time, urllib.request, urllib.error
+import smiteconfig as cfg
 import smitepaths as sp
 
 API = "https://u.gg/api"
-REGION_DEFAULT = "na1"
+REGION_DEFAULT = cfg.region()    # u.gg region ids are Riot platform ids (la1, na1, ...)
 CACHE = sp.cache("ugg")
 TTL = 600                      # cache a player's pull ~10 min (matches Riot's ids-list TTL)
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36"
@@ -86,7 +87,7 @@ def _post(riot_id, region, timeout):
 def recent_matches(riot_id, count=10, region=REGION_DEFAULT, ranked_only=True, timeout=8):
     """Recent games for a 'Name#TAG' from u.gg, most-recent-first, normalized to:
       [{champ_id, win, k, d, a, pos, match_id, perf}]
-    `match_id` is Riot-formatted ('NA1_<gameId>') so it de-dupes against Riot ids. `perf` is
+    `match_id` is Riot-formatted ('LA1_<gameId>') so it de-dupes against Riot ids. `perf` is
     u.gg's own hard-carry score (0-100+), a stand-in for our per-game grade on this path.
     Returns [] on ANY failure — the caller treats that exactly like 'no recent games'."""
     region = region or REGION_DEFAULT
@@ -138,7 +139,9 @@ def recent_matches(riot_id, count=10, region=REGION_DEFAULT, ranked_only=True, t
 
 if __name__ == "__main__":                   # quick manual check: python lolugg.py "Name#TAG"
     import sys
-    rid = sys.argv[1] if len(sys.argv) > 1 else "Ablazeolive#NA1"
+    if len(sys.argv) < 2:
+        sys.exit("usage: python lolugg.py \"Name#TAG\"   (region: Settings -> Region)")
+    rid = sys.argv[1]
     rows = recent_matches(rid, count=10)
     print(f"{rid}: {len(rows)} games  stats={_STATS}")
     for r in rows:

@@ -13,6 +13,7 @@ Usage:
 Roles: top jungle mid adc support
 """
 import sys, os, json, time, ssl, urllib.request
+import smiteconfig as cfg
 import smitepaths as sp
 
 try:
@@ -119,19 +120,22 @@ def ddragon():
 # ---------- op.gg ----------
 OPGG_CACHE = sp.cache("opgg")
 OPGG_TTL = 6 * 3600        # op.gg champ data only shifts patch-to-patch; 6h keeps champ select snappy
+OPGG_REGION = cfg.routing()[2]   # op.gg's code for Settings -> Region (lan, las, na, euw, ...)
+
+
 def opgg(cid, role, tier=None):
     """op.gg champ data, disk-cached per (champ, role, tier) for OPGG_TTL. On a network
     hiccup it serves stale cache rather than failing the build/scout. Empty results aren't
     cached, so a transient blank re-fetches next time."""
     role = ROLE.get((role or "").lower(), (role or "").lower())
-    fp = os.path.join(OPGG_CACHE, f"{cid}_{role}_{tier or 'def'}.json")
+    fp = os.path.join(OPGG_CACHE, f"{OPGG_REGION}_{cid}_{role}_{tier or 'def'}.json")
     try:
         c = json.load(open(fp, encoding="utf-8"))
         if time.time() - c.get("ts", 0) < OPGG_TTL:
             return c.get("data", {})
     except Exception:
         pass
-    url = f"https://lol-api-champion.op.gg/api/na/champions/ranked/{cid}/{role}"
+    url = f"https://lol-api-champion.op.gg/api/{OPGG_REGION}/champions/ranked/{cid}/{role}"
     if tier: url += f"?tier={tier}"
     try:
         data = http(url, headers={"User-Agent": UA, "Accept": "application/json"}).get("data", {})
@@ -154,7 +158,7 @@ def opgg_all_ranked():
     'strongest champs in role X' reads (e.g. ban ideas). One list, disk-cached ~6h. [] on any
     failure (serves stale if present). Each entry: {id, average_stats{...}, positions:[{name,
     stats{win_rate,play,...}}]}."""
-    fp = os.path.join(OPGG_CACHE, "_ranked_all.json")
+    fp = os.path.join(OPGG_CACHE, f"_ranked_all_{OPGG_REGION}.json")
     try:
         c = json.load(open(fp, encoding="utf-8"))
         if time.time() - c.get("ts", 0) < OPGG_TTL:
@@ -162,7 +166,7 @@ def opgg_all_ranked():
     except Exception:
         pass
     try:
-        raw = http("https://lol-api-champion.op.gg/api/na/champions/ranked",
+        raw = http(f"https://lol-api-champion.op.gg/api/{OPGG_REGION}/champions/ranked",
                    headers={"User-Agent": UA, "Accept": "application/json"}, timeout=10)
         data = raw.get("data", raw) if isinstance(raw, dict) else raw
     except Exception:

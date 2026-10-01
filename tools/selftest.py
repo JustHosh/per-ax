@@ -59,16 +59,37 @@ def c_riot_key():
     # MUST send a browser User-Agent: Riot's API is behind Cloudflare, which 403s
     # (error 1010) a bare Python urllib UA. The real scout (lolscout._get) sends lb.UA.
     req = urllib.request.Request(
-        "https://na1.api.riotgames.com/lol/status/v4/platform-data",
+        f"https://{ls.PLATFORM}.api.riotgames.com/lol/status/v4/platform-data",
         headers={"X-Riot-Token": key, "User-Agent": lb.UA})
     try:
         with urllib.request.urlopen(req, timeout=8, context=ssl.create_default_context()) as r:
             json.load(r)
-        return OK, f"valid (key ...{key[-4:]})"
+        return OK, f"valid on {ls.PLATFORM} (key ...{key[-4:]})"
     except urllib.error.HTTPError as e:
         if e.code in (401, 403):
             return FAIL, "rejected (401/403) - regenerate at developer.riotgames.com"
         return FAIL, f"HTTP {e.code}"
+
+
+def c_region():
+    """Settings -> Region drives every Riot host. A wrong routing pair fails silently (a 404 per
+    player reads exactly like 'no ranked games'), so the table and the live wiring are checked."""
+    import smiteconfig as cfg, lolscout as ls, lolbuild as lb
+    if cfg.DEFAULT_REGION != "la1":
+        return FAIL, f"default region is {cfg.DEFAULT_REGION}, this fork plays on LAN (la1)"
+    bad = [p for p, (rg, site, _l) in cfg.REGIONS.items()
+           if rg not in ("americas", "europe", "asia", "sea") or not site]
+    if bad:
+        return FAIL, f"bad routing rows: {bad}"
+    if cfg.routing("la1")[:3] != ("la1", "americas", "lan"):
+        return FAIL, f"la1 routes wrong: {cfg.routing('la1')}"
+    if cfg.routing("zz9")[0] != cfg.region():
+        return FAIL, "an unknown platform must fall back to the configured region"
+    if (ls.PLATFORM, ls.REGIONAL) != cfg.routing()[:2] or lb.OPGG_REGION != cfg.routing()[2]:
+        return FAIL, "lolscout / lolbuild are not on the configured region"
+    if ls.ACCOUNT_REGIONAL == "sea":
+        return FAIL, "account-v1 has no sea cluster"
+    return OK, f"{ls.PLATFORM} -> {ls.REGIONAL} (match-v5), op.gg '{lb.OPGG_REGION}'"
 
 
 def c_claude():
@@ -1167,6 +1188,7 @@ def main():
         ("Pillow (image render)", c_pillow),
         ("Data Dragon (champ data)", c_ddragon),
         ("op.gg (builds + matchups)", c_opgg),
+        ("Region (Riot routing)", c_region),
         ("Riot API key (player scout)", c_riot_key),
         ("claude CLI (matchup tips)", c_claude),
         ("Tag spec (docs/TAGS.md)", c_tagspec),

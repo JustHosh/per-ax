@@ -133,8 +133,31 @@ RETIRED = ("fav_champs", "ghost_race", "duo_detection",
            # champ-select autopilot, removed for policy reasons (never auto-decide for you)
            "auto_ban", "auto_accept", "ban_list", "auto_swap_roles", "auto_pick_swap")
 
+# Riot platform id -> (regional route for match-v5, the op.gg / League of Graphs / Porofessor
+# site code, label). account-v1 has no "sea" cluster; lolscout sends SEA account lookups to
+# "asia". The default is LAN: this fork plays on la1.
+REGIONS = {
+    "la1": ("americas", "lan", "LAN - Latin America North"),
+    "la2": ("americas", "las", "LAS - Latin America South"),
+    "na1": ("americas", "na", "NA - North America"),
+    "br1": ("americas", "br", "BR - Brazil"),
+    "euw1": ("europe", "euw", "EUW - Europe West"),
+    "eun1": ("europe", "eune", "EUNE - Europe Nordic & East"),
+    "tr1": ("europe", "tr", "TR - Turkey"),
+    "ru": ("europe", "ru", "RU - Russia"),
+    "me1": ("europe", "me", "ME - Middle East"),
+    "kr": ("asia", "kr", "KR - Korea"),
+    "jp1": ("asia", "jp", "JP - Japan"),
+    "oc1": ("sea", "oce", "OCE - Oceania"),
+    "sg2": ("sea", "sg", "SEA - Southeast Asia"),
+    "tw2": ("sea", "tw", "TW - Taiwan"),
+    "vn2": ("sea", "vn", "VN - Vietnam"),
+}
+DEFAULT_REGION = "la1"
+
 STRINGS = {"max_elo_main": "",      # CLIMB MODE: the champion you queue for ('' = not chosen)
            "max_elo_backup": "",    # ... and the one you go to when the main is banned/taken
+           "region": DEFAULT_REGION,  # Riot platform id, a key of REGIONS (Settings -> Region)
            "draft_db": "",
            "draft_page": "https://bobbyroylee.github.io/smiteless/draft/",
            "draft_msg": ""}
@@ -160,6 +183,19 @@ def load():
     except Exception:
         pass
     return s
+
+
+def region():
+    """The configured Riot platform id ('la1' unless changed in Settings; junk falls back)."""
+    r = str(load().get("region") or "").strip().lower()
+    return r if r in REGIONS else DEFAULT_REGION
+
+
+def routing(platform=None):
+    """(platform, regional, site_code) for `platform`, or for the configured region."""
+    p = platform if platform in REGIONS else region()
+    regional, site, _label = REGIONS[p]
+    return p, regional, site
 
 
 def arm_max_elo(main, backup=""):

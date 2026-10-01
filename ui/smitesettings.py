@@ -644,6 +644,23 @@ def main():
         side="left", padx=(0, 4))
     skin.button(dbbtns, "Save + test", _test_draft, primary=True).pack(side="left", padx=4)
 
+    # ---- Region: the Riot server your accounts play on (default LAN) ----
+    skin.section_rule(body, "REGION").pack(fill="x", padx=18, pady=(12, 2))
+    tk.Label(body, text="The Riot server your accounts play on. Player lookups (rank, match "
+             "history, the scout) and the build stats use it. Applies the next time a window "
+             "opens.", bg=VOID, fg=MUTED, font=skin.body(SMALL), justify="left",
+             anchor="w", wraplength=430).pack(fill="x", padx=18, pady=(0, 4))
+    _reg_codes = list(cfg.REGIONS)
+    _reg_labels = [f"{cfg.REGIONS[c][2]}  ({c})" for c in _reg_codes]
+    region_var = tk.StringVar(value=_reg_labels[_reg_codes.index(cfg.region())])
+    ttk.Combobox(body, textvariable=region_var, values=_reg_labels, state="readonly", width=42,
+                 style="Fav.TCombobox", font=skin.body(SMALL)).pack(anchor="w", padx=18,
+                                                                    pady=(0, 6))
+
+    def _region_code():
+        lbl = region_var.get()
+        return _reg_codes[_reg_labels.index(lbl)] if lbl in _reg_labels else cfg.region()
+
     skin.section_rule(body, "RIOT API KEY").pack(fill="x", padx=18, pady=(12, 2))
     keyfr = skin.card(body, rail=WARN)
     keyfr.pack(fill="x", padx=14, pady=(0, 5))
@@ -751,7 +768,8 @@ def main():
                   "flash_on_d": (flash_side.get() == 0),
                   "solo_coaching": solocoach.get(),
                   "draft_link": draftlink.get(), "draft_autoopen": draftopen.get(),
-                  "draft_db": db_entry.get().strip()})
+                  "draft_db": db_entry.get().strip(),
+                  "region": _region_code()})
         cfg.set_auto_open(auto.get())
         cfg.set_home_on_start(homeonstart.get())
         cfg.set_autostart(startwin.get())
