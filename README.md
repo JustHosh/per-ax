@@ -156,3 +156,7 @@ No hagas `git merge upstream/main`: reintroduciría lo que quitamos.
 
 Basado en [Smiteless](https://github.com/bobbyroylee/smiteless) de bobbyroylee, licencia MIT.
 Este proyecto conserva esa licencia: ver [LICENSE](LICENSE).
+
+Per-Ax isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or
+anyone officially involved in producing or managing Riot Games properties. Riot Games, and all
+associated properties are trademarks or registered trademarks of Riot Games, Inc.

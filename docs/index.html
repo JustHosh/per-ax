@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Per-Ax</title>
+<meta name="description" content="Per-Ax: a League of Legends companion for LAN - draft, loading-screen and in-game guidance that stays inside Riot's developer policies.">
+<style>
+  :root { --bg: #11131a; --surface: #171a24; --line: #262b3b; --text: #e8e3f4; --muted: #9a92b4;
+          --gold: #c8aa6e; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 16px/1.6 "Segoe UI", system-ui, -apple-system, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 48px 16px 64px; }
+  header { display: flex; align-items: center; gap: 16px; margin-bottom: 8px; }
+  .mark { width: 56px; height: 56px; border-radius: 12px; background: #14171f;
+          border: 2px solid #3a3428; display: grid; place-items: center;
+          color: var(--gold); font: 700 34px/1 "Bahnschrift", "Segoe UI", sans-serif; }
+  h1 { margin: 0; font: 700 40px/1.1 "Bahnschrift", "Segoe UI", sans-serif; letter-spacing: .5px; }
+  .tag { color: var(--muted); margin: 0 0 32px; }
+  h2 { color: var(--gold); font-size: 15px; letter-spacing: 1.5px; text-transform: uppercase;
+       margin: 36px 0 10px; }
+  section { background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+            padding: 4px 20px; }
+  ul { padding-left: 20px; }
+  li { margin: 6px 0; }
+  a { color: var(--gold); }
+  .legal { color: var(--muted); font-size: 13px; margin-top: 40px; }
+  @media (max-width: 520px) { h1 { font-size: 32px; } main { padding-top: 32px; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="mark" aria-hidden="true">P</div>
+    <h1>Per-Ax</h1>
+  </header>
+  <p class="tag">A League of Legends companion for the LAN server: guidance in champ select, on the
+    loading screen and in game, built to stay inside Riot's developer policies.</p>
+
+  <h2>What it does</h2>
+  <section>
+    <ul>
+      <li><b>Champ select:</b> pick and ban suggestions for your role, rune and summoner import,
+        and matchup notes. Clicking a suggestion only hovers it; picking, banning and accepting
+        are always the player's own clicks.</li>
+      <li><b>Loading screen:</b> a scout of the ten players from public ranked history (rank,
+        recent form, champion record).</li>
+      <li><b>In game:</b> objective timers, tempo and safety guidance, and item suggestions,
+        read from the game's local Live Client Data API.</li>
+      <li><b>Between games:</b> a profile that grades your own games and points at the habit
+        costing you the most LP.</li>
+    </ul>
+  </section>
+
+  <h2>How it uses Riot's data</h2>
+  <section>
+    <ul>
+      <li>Read-only: it never sends keyboard or mouse input to the game or the client, and never
+        automates champ-select decisions.</li>
+      <li>Enemy information is limited to what the game already showed the player (kill feed,
+        objective announcements, scoreboard). Nothing is inferred from fog of war, and players
+        the client anonymizes are never looked up.</li>
+      <li>Riot API (account-v1, summoner-v4, league-v4, champion-mastery-v4, match-v5) with
+        Riot's rate-limit headers respected. Ranked games are aggregated locally into item
+        statistics without storing the names or PUUIDs of the players in them (only the ladder
+        players a collection run starts from are kept, by PUUID, so it can resume).</li>
+    </ul>
+  </section>
+
+  <h2>Links</h2>
+  <section>
+    <ul>
+      <li><a href="https://github.com/JustHosh/per-ax">Source code on GitHub</a></li>
+      <li><a href="https://developer.riotgames.com/policies/general">Riot Games developer policies</a></li>
+    </ul>
+  </section>
+
+  <h2>En español</h2>
+  <section>
+    <p>Per-Ax es un asistente de League of Legends para LAN: sugerencias en champ select, scout
+      en la pantalla de carga y guías durante la partida. Solo lee datos; nunca juega ni decide
+      por ti. Basado en Smiteless (bobbyroylee, licencia MIT).</p>
+  </section>
+
+  <p class="legal">Per-Ax isn't endorsed by Riot Games and doesn't reflect the views or opinions of
+    Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot
+    Games, and all associated properties are trademarks or registered trademarks of Riot Games,
+    Inc.</p>
+</main>
+</body>
+</html>
