@@ -1,72 +1,46 @@
-# Smiteless — working notes for Claude
+# Smiteless (adaptación LAN) — notas para Claude
 
-A League of Legends companion (build + coach + scout + in-game overlays + the DraftBoard
-web page). Windows, Python, Tk overlays + PIL-rendered boards. Private repo; **multiple
-Claude sessions (local and cloud) edit it in parallel — read this before reworking shared
-surfaces so we stop stepping on each other.**
+Fork independiente de Smiteless (bobbyroylee, MIT) adaptado para jugar en LAN y para cumplir
+las políticas de desarrolladores de Riot. Windows, Python (ventanas Tk + tableros renderizados
+con PIL), trays en AutoHotkey v2. El usuario habla español: documentación, commits y
+respuestas en español; la interfaz de la app sigue en inglés hasta la traducción.
 
-## Releases — READ THIS FIRST
-- **Never ask permission to release.** Don't say "want me to update?" — just do it when a
-  batch is ready. (He hates being asked.)
-- **Batch. One release per coherent chunk of work — NOT per commit or per micro-fix.**
-  Commit freely; hold the release until it's a meaningful, self-contained unit. Shipping a
-  release per tiny tweak is noise and burns real compute (each `make-release` runs a full
-  PyInstaller freeze + installer build, minutes each).
-- **Web-only changes do NOT need an app release.** `docs/draft/index.html` (the DraftBoard
-  page) deploys to GitHub Pages on push — just commit + push, no `make-release`. Only cut an
-  app release when the bundled Python/exe actually changed. Dev-only changes (dev tray) skip
-  releasing too — say so.
-- **How to release — TWO paths. A cloud session can release on its own; never claim a release
-  "needs his Windows machine".**
-  - *On his box:* `powershell -ExecutionPolicy Bypass -File dist\make-release.ps1 -Version X.Y.Z -Notes "..."`
-  - *Anywhere else (cloud sessions — this is the one you want):* dispatch
-    `.github/workflows/release.yml` with `{"version": "X.Y.Z"}` and `ref` = your working
-    branch (GitHub MCP: `actions_run_trigger`, method `run_workflow`). It builds
-    SmitelessSetup.exe on a **Windows runner**, fast-forwards `main` to your branch, tags, and
-    publishes — ~4 minutes, no local toolchain. **Don't touch VERSION**; the workflow sets and
-    commits it. Release notes are grepped out of the `## vX.Y.Z` CHANGELOG section.
-  Either way the in-app updater reads **only** `/releases/latest` — old releases are pure
-  history, leave them.
-- **Verify the release before you call it done:** `/releases/latest` must show the new tag
-  **and** a `SmitelessSetup.exe` asset. A release published without that asset is worse than
-  no release — `smiteupdate.latest_release()` returns None and installed copies stop being
-  offered *any* update, including the previous version.
-- **New `core/`/`ui/` module? Add it to the `$hidden` list in `dist\build.ps1`** before you
-  release. Its siblings are all in there; left out, PyInstaller can ship an exe that crashes
-  on import — a release missing the very feature it's named for.
-- **Never build on top of a live game — LOCAL path only.** `make-release` is a multi-minute
-  PyInstaller freeze + installer build; running it while `tools\phasecheck.py` says
-  GameStart/InProgress/Reconnect costs him FPS in the ranked game this whole project exists to
-  win. Poll the phase and cut the release when he's out. Don't ask — just wait, then ship.
-  The **cloud workflow runs on GitHub's hardware and costs him nothing** — never delay it for
-  a live game, and never make him wait for a release you could have shipped while he played.
-- **Version numbering:** bump +0.0.1 (0.9.40 → 0.9.41). Never jump to 1.0 without his say-so.
-- **CHANGELOG.md first:** add an entry (top of file) before you release — it feeds the
-  in-app Patch Notes window. Each release needs ≥1 change the user can SEE in a minute;
-  invisible-only correctness batches read as "paid for nothing."
+## Reglas que no se rompen (las vigila `tools/selftest.py`)
+- **Nada de input simulado.** Ningún módulo usa SendInput / keybd_event / mouse_event /
+  SetWindowsHookEx ni `Send` en AHK. La app lee el juego, no lo juega. (check "No input injection")
+- **Champ select es del jugador.** Nunca aceptar la cola, banear, lockear ni pedir o aceptar
+  swaps por él. Sugerir y hacer hover al hacer clic sí; importar runas sí. (check "No
+  champ-select autopilot")
+- **Jungla enemiga: solo lo que el juego mostró** (kill feed, anuncios de objetivos, timer de
+  muerte). Nada inferido de la niebla, como su CS. (check "Jungle tracker")
+- **Nunca desenmascarar jugadores.** En champ select solo se usan nombres de aliados que el
+  cliente muestra (`nameVisibilityType` distinto de HIDDEN); nunca el endpoint de
+  participantes del chat. (check "Champ-select scout")
+- **La nota de un jugador es su rendimiento en partida.** Las etiquetas citan su evidencia
+  ([docs/TAGS.md](docs/TAGS.md), `tools/tagcheck.py`).
+- Nada de anuncios dentro del juego ni de timers de habilidades enemigas.
 
-## Verify before you ship
-- Health: `python tools\selftest.py` (also runs the tag + glyph guards).
-- Guards that must stay green: `tools\tagcheck.py` (player-tag spec, docs/TAGS.md) and
-  `tools\glyphcheck.py` (tofu tripwire — no symbol glyph drawn through a text-blind font).
-- UI changes: render with real data and LOOK at the PNG (a color swap alone reads as "no
-  change"). Overlay changes go through the real window path + a proven Tk pattern (no novel
-  Win32 painting); un-triggerable surfaces ship with a diagnostic log.
-- Full how-to lives in the `verify` skill under `.claude/skills/verify`.
+## Dónde vive cada cosa
+- `core/` lógica, `ui/` ventanas, `tools/` utilidades; `smiteless_main.py` es la entrada única
+  del exe congelado.
+- `core/smitepaths.py`: todas las rutas. Los datos van en `%APPDATA%\Smiteless`, nunca en el
+  repo ni en `~/.claude`. Los trays AHK escriben la misma carpeta a mano.
+- `core/smiteconfig.py`: ajustes, `REGIONS` y `region()` / `routing()` (LAN por defecto).
+- Clave de Riot: `lolscout.read_key()` / `save_key()` (RIOT_API_KEY > `.env` > archivo).
+- Updater: `REPO` en `tools/smiteupdate.py` y `UPDATE_REPO` en `dist/tray.ahk`. Vacíos =
+  apagado. Solo se apuntan a un repo propio con releases que lleven `SmitelessSetup.exe`.
+- Módulo nuevo en `core/` o `ui/`: agrégalo a `$hidden` en `dist/build.ps1` (el selftest falla
+  si falta; PyInstaller no ve los imports perezosos).
 
-## Invariants that keep getting stomped — don't revert these
-- **The DraftBoard in-game scoreboard is HORIZONTAL: the two teams sit side by side**
-  (`.scoutcols` grid in `docs/draft/index.html`), collapsing to one column on phones. A
-  prior session reverted this to a full-width top-down stack "so columns align" — the user
-  explicitly wants side-by-side. Leave it.
-- **Player grade = in-game performance only** (`lolprofile._grade_game` lineage). Never rank,
-  W/L, or cross-account peeking.
-- **Tags cite their evidence** (docs/TAGS.md): THIS-GAME reads separate from ACCOUNT reads;
-  `smurf?` needs account-level evidence and renders as an inference. Don't let a Morgana
-  one-trick playing Brand read as a smurf.
-- **DraftBoard link is short** (`…/draft/#d=<id>`, no `&db=` blob): the page bakes in the DB
-  host — `DEFAULT_DB` in `docs/draft/index.html` ⇄ `loldraft._DEFAULT_PAGE_DB`. Keep in sync.
+## Verificar antes de dar algo por hecho
+- `python tools\selftest.py`: todo OK; los "skip" (sin clave, sin cliente, sin CLI de Claude)
+  son normales.
+- Cambios de interfaz: renderizar con datos y mirar el PNG (skill `verify`,
+  `python tools\uishot.py`).
+- En esta PC no hay AutoHotkey: los cambios a `.ahk` deben ser mínimos y revisados a mano.
+- No manejar en vivo lo destructivo (`lolaccounts.switch` cierra los clientes de Riot) ni
+  POSTs a la LCU a mitad de cola.
 
-## North star
-Every change should speed the climb to Diamond. Cut anything that just "covers the game"
-without shortening the climb. Quality over coverage — 6 things done right beats 12 half-done.
+## Upstream
+`upstream` apunta al repo original (push bloqueado). Para traer un arreglo: `git fetch upstream`
+y `git cherry-pick <hash>`. Nunca `git merge upstream/main`: reintroduce lo que se quitó.

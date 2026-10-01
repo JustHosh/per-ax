@@ -17,12 +17,11 @@ you (Smiteless) ──publishes draft──▶ Firebase RTDB (free) ──stream
         └──posts ONE short link in chat + opens it for you──▶ …github.io/smiteless/draft/#d=…
 ```
 
-The link is short — just `…/draft/#d=<id>` — because the hosted page bakes in its own
-Firebase host (`loldraft._DEFAULT_PAGE_DB` ⇄ `DEFAULT_DB` in `docs/draft/index.html`; keep
-them in sync). If you self-host DraftBoard against a *different* database, the link
-automatically grows a `&db=<host>` suffix so your page still knows where to stream from.
-The chat message and whether it auto-opens for you are both in Settings → Champ-select
-automation (and `draft_msg` in the settings JSON overrides the message text).
+Out of the box every link carries `&db=<host>`, so the page knows which database to stream
+from. To get the short form — just `…/draft/#d=<id>` — bake your Firebase host into your page:
+set `loldraft._DEFAULT_PAGE_DB` and `DEFAULT_DB` in `docs/draft/index.html` to the same host
+(both are empty in this fork). The chat post and whether it auto-opens for you are toggles in
+Settings → CHAMP SELECT (`draft_msg` in the settings JSON overrides the message text).
 
 **It becomes the scoreboard in-game.** During champ select the page shows the draft (picks,
 bans, per-seat suggestions). The moment the game loads, `loldraft._scout_phase` PATCHes a
@@ -34,7 +33,8 @@ the whole feature off with the "Live draft link" toggle if you don't want to sha
 
 ## One-time setup (~5 minutes)
 
-The feature stays dormant until you give Smiteless a database to publish to.
+The feature stays dormant until you give Smiteless BOTH a database to publish to and the URL
+of your own hosted copy of the page.
 
 ### 1. Create a free Firebase Realtime Database
 
@@ -65,19 +65,18 @@ The feature stays dormant until you give Smiteless a database to publish to.
 4. Copy the database URL shown above the data tree — it looks like
    `https://smiteless-draft-default-rtdb.firebaseio.com`.
 
-### 2. Paste it into Smiteless
+### 2. Host the page
 
-Tray → **Settings** → **LIVE DRAFT LINK** → paste the URL → **Save + test**. The test
-publishes a fake draft and opens the resulting page in your browser — if you see the demo
-board go live, the whole pipeline works. The "Live draft link" checkbox under FEATURES
-turns the chat post on/off.
+The page itself is [`docs/draft/index.html`](draft/index.html), served by GitHub Pages from
+YOUR repo: **Settings → Pages → Deploy from a branch → `main` / `docs`**. Its URL is
+`https://<user>.github.io/<repo>/draft/`.
 
-### 3. (Repo owners only) hosting the page
+### 3. Paste both into Smiteless
 
-The page itself is [`docs/draft/index.html`](draft/index.html), served by GitHub Pages:
-repo **Settings → Pages → Deploy from a branch → `main` / `docs`**. If you fork this and
-host your own copy, point the `draft_page` key in `~/.claude/smiteless_settings.json` at
-your Pages URL.
+Tray → **Settings** → **LIVE DRAFT LINK** → paste the **Database URL** and the **Page URL** →
+**Save + test**. The test publishes a fake draft and opens the resulting page in your browser
+— if you see the demo board go live, the whole pipeline works. The "Live draft link" checkbox
+under CHAMP SELECT turns the chat post on/off.
 
 ## How it behaves
 
@@ -91,8 +90,16 @@ your Pages URL.
   7-second polling if streaming is blocked.
 - Manual test any time: `python core\loldraft.py test`.
 
-## Privacy
+## Privacy — read before turning it on
 
-The published draft contains champion/rune/item IDs and role tags only — **no summoner
-names, no PUUIDs, no ranks**. Enemy picks appear exactly as Riot exposes them in champ
-select (locked champions only; Riot anonymizes enemy players there anyway).
+- **During champ select** the published draft holds champion/rune/item IDs and role tags
+  only: no names, no PUUIDs, no ranks. Enemy picks appear exactly as Riot exposes them there
+  (locked champions only).
+- **Once the game loads, the same page becomes a scoreboard for all ten players**: game name
+  (without the tag), rank and LP, last-10 form, KDA, performance grade and profile tags such
+  as `SMURF READ` or `tilt risk`. The database is public-read by design, so anyone holding the
+  link can see that board.
+- The link is also posted automatically, once per lobby, into champ-select chat.
+
+Leave the feature off (it is off until you configure it) unless you are comfortable
+publishing that about the other nine players.

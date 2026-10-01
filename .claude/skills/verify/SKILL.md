@@ -1,35 +1,46 @@
 ---
 name: verify
-description: How to build, run, and visually verify Smiteless changes on this machine.
+description: Cómo comprobar y ver los cambios de Smiteless (adaptación LAN) en esta PC sin cliente de League ni partida.
 ---
 
-# Verifying Smiteless
+# Verificar Smiteless
 
-Dev-run any window directly (imports resolve via the path inserts in each entry file):
+Repo: `C:\Users\luang\Downloads\smiteless-main`. Cada ventana se puede abrir sola (las rutas se
+resuelven con los `sys.path.insert` de cada archivo):
 
-    cd C:\Users\bobby\smiteless
-    python ui\smitesettings.py          # settings (single-instance mutex "Global\SmitelessSettings")
-    python ui\smiteprofile.py           # profile/home
-    python smiteless_main.py <cmd>      # overlay|widget|settings|profile|phase|login <name>|accounts|...
+    python smiteless_main.py <overlay|widget|settings|profile|queue|load|dead|notes>
 
-Health check: `python tools\selftest.py` (needs network + the League client for the LCU line).
+## 1. Salud general
 
-AHK syntax check (must use PowerShell — Git Bash mangles the /switches into paths):
+    python tools\selftest.py
 
-    $ahk = "$env:LOCALAPPDATA\Programs\AutoHotkey\v2\AutoHotkey64.exe"
-    Start-Process $ahk -ArgumentList '/ErrorStdOut','/Validate','<script>.ahk' -Wait -PassThru -NoNewWindow
-    # exit 0 = clean; the plain `& $ahk` form does not surface the exit code
+Debe salir todo OK. Los "skip" esperados: sin clave de Riot, cliente de League cerrado y sin el
+CLI de Claude. Las comprobaciones de políticas (input simulado, piloto automático de champ
+select, jungla, desenmascarar jugadores, silencio sin teclado) nunca deben fallar.
 
-GUI evidence: windows are Tk. Find by title (`FindWindowW(None, "Smiteless Settings")`),
-scroll with WM_MOUSEWHEEL SendMessage, capture with PrintWindow(PW_RENDERFULLCONTENT) +
-GetDIBits so it works while occluded. **Never SetForegroundWindow / SetCursorPos clicks —
-the user is often mid-game fullscreen.** Synthetic WM_LBUTTONDOWN/UP PostMessage at client
-coords works on Tk without stealing focus.
+Para detectar nombres rotos después de borrar código: pyflakes en un venv temporal (no en el
+Python del usuario) y comparar contra el commit anterior; el original ya trae unas 20
+advertencias.
 
-Frozen build: `dist\build.ps1` → run `build\pyi\SmitelessApp\SmitelessApp.exe <cmd>` to
-verify the shipped artifact. Full release: `dist\make-release.ps1 -Version X.Y.Z`
-(+0.0.1 bumps, CHANGELOG entry first — it feeds the in-app Patch Notes).
+## 2. Ver la interfaz
 
-Destructive paths: anything that kills the Riot/League clients (`lolaccounts.switch`)
-or fires LCU POSTs mid-queue — don't drive live; test the engine functions and refusal
-paths instead.
+    python tools\uishot.py [settings] [champselect] [widget] [draftboard] [--out DIR]
+
+- `champselect` y `widget` se dibujan con datos de demo a través de las funciones reales
+  (`smitecard.render_cs_vertical`, `smitewidget._render_body`).
+- `settings` abre la ventana Tk real invisible (alpha 0, sin robar el foco) y la captura con
+  PrintWindow, una vista por desplazamiento.
+- `draftboard` es `docs/draft/index.html#demo` en Edge headless.
+
+Mira los PNG (salen en `%APPDATA%\Smiteless\cache\uishot`). Un cambio de color sin captura no
+cuenta como verificado.
+
+## 3. Lo que no se puede probar aquí
+
+- **AutoHotkey no está instalado.** `smiteless.ahk`, `dist/tray.ahk` y `dist/installer.ahk` no
+  se pueden validar: cambios mínimos, sintaxis v2 simple y revisión a mano.
+- Sin cliente ni partida no corren la LCU ni `:2999`: prueba las funciones puras con fixtures
+  o con sesiones falsas (como hacen los checks del selftest), no en vivo.
+- Nunca ejecutar lo destructivo: `lolaccounts.switch` cierra los clientes de Riot, y los POST
+  a la LCU actúan sobre una cola o champ select real.
+- Nunca SetForegroundWindow ni clics simulados: el usuario puede estar en partida.
