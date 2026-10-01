@@ -31,6 +31,7 @@ for _s in ("stdout", "stderr"):                # pythonw / bundled exe: no conso
 import smitecard as sc
 import smiteconfig as cfg
 import smitepaths as sp
+import lolscout as ls
 
 import smiteskin as skin
 BG = skin.VOID   # matches smitecard's background so there's no border seam
@@ -273,18 +274,8 @@ def main():
     label.pack(side="top")
 
     # --- Riot API key bar: refresh the dev key (expires every 24h) without leaving the game ---
-    KEY_FILES = [os.path.expanduser("~/.riot_api_key"), os.path.expanduser("~/.riot_api_key.txt")]
-
     def read_current_key():
-        for p in KEY_FILES:
-            try:
-                if os.path.exists(p):
-                    k = open(p, encoding="utf-8").read().strip()
-                    if k:
-                        return k
-            except Exception:
-                pass
-        return None
+        return ls.read_key()
 
     bar = tk.Frame(root, bg=skin.SURFACE)
     bar.pack(side="bottom", fill="x")
@@ -320,13 +311,11 @@ def main():
         if not (k.startswith("RGAPI-") and len(k) >= 24):
             status.config(text="that doesn't look like an RGAPI-... key", fg=skin.BAD)
             return
-        for p in KEY_FILES:
-            try:
-                with open(p, "w", encoding="utf-8") as f:
-                    f.write(k)
-            except Exception as e:
-                status.config(text=f"save failed: {e}", fg=skin.BAD)
-                return
+        try:
+            ls.save_key(k)
+        except Exception as e:
+            status.config(text=f"save failed: {e}", fg=skin.BAD)
+            return
         entry.delete(0, "end")
         refresh_key_label()
         status.config(text=f"saved ...{k[-4:]} - applies next game", fg=skin.GOOD)

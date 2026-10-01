@@ -4,8 +4,9 @@
 Free dev keys die every 24h. The tray runs `SmitelessApp.exe keycheck` shortly after
 startup: if a key file EXISTS but Riot now rejects it (401/403 on the status host - a
 definitive verdict, not a network blip), a small prompt opens to paste a fresh one.
-No key file at all = the user never set the scout up -> stay silent (it's optional).
-Valid key / can't-tell (offline) -> exit silently.
+No key at all = the user never set the scout up -> stay silent (it's optional). A key that
+comes from the RIOT_API_KEY environment variable / .env is managed there, so no prompt either
+(pasting here couldn't override it). Valid key / can't-tell (offline) -> exit silently.
 """
 import sys, os, webbrowser
 
@@ -22,7 +23,6 @@ import lolscout as ls
 
 BG = "#11131a"; PANEL = "#171a24"; GOLD = "#c8aa6e"; TXT = "#d8d6cf"; MUTED = "#8b897f"
 GREEN = "#5fc47a"; RED = "#d46d78"; ENTRY = "#0d0f16"; BTN = "#262b3b"; BTN_A = "#333a52"
-KEY_FILES = [os.path.expanduser("~/.riot_api_key"), os.path.expanduser("~/.riot_api_key.txt")]
 
 
 def prompt(old_key):
@@ -64,13 +64,11 @@ def prompt(old_key):
         if not (k.startswith("RGAPI-") and len(k) >= 24):
             status.config(text="that doesn't look like an RGAPI-... key", fg=RED)
             return
-        for p in KEY_FILES:
-            try:
-                with open(p, "w", encoding="utf-8") as f:
-                    f.write(k)
-            except Exception as e:
-                status.config(text=f"save failed: {e}", fg=RED)
-                return
+        try:
+            ls.save_key(k)
+        except Exception as e:
+            status.config(text=f"save failed: {e}", fg=RED)
+            return
         status.config(text=f"saved ...{k[-4:]} — you're set", fg=GREEN)
         root.after(900, root.destroy)
 
@@ -97,6 +95,8 @@ def main():
     key = ls.read_key()
     if not key:
         return                                   # scout never set up -> not our business
+    if ls.key_source() != "file":
+        return                                   # env / .env key: managed outside the app
     if ls.key_ok(key) is False:                  # DEFINITIVE rejection only (never on outages)
         prompt(key)
 

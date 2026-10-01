@@ -46,17 +46,63 @@ _CALLS_LOCK = threading.Lock()   # scouting runs the 10 players in parallel -> s
 _KEYOK = {}            # key -> (ts, True/False); only definitive results are cached
 
 
-def read_key():
-    # Use the most-recently-modified key file, so a fresh update always wins even if the
-    # two files (~/.riot_api_key and .txt) somehow got out of sync.
-    existing = [p for p in (os.path.expanduser("~/.riot_api_key"),
-                            os.path.expanduser("~/.riot_api_key.txt")) if os.path.exists(p)]
-    if not existing:
+KEY_ENV = "RIOT_API_KEY"
+KEY_FILE = sp.data("riot_api_key.txt")      # where Settings / the key bar save a pasted key
+
+
+def _dotenv_key():
+    """RIOT_API_KEY from a .env file at the repo root - dev runs from source only. The file is
+    git-ignored, so a key kept there can never be committed by accident."""
+    if getattr(sys, "frozen", False):
         return None
     try:
-        return open(max(existing, key=os.path.getmtime), encoding="utf-8").read().strip() or None
+        with open(os.path.join(_ROOT, ".env"), encoding="utf-8") as f:
+            for line in f:
+                k, sep, v = line.strip().partition("=")
+                if sep and k.strip() == KEY_ENV:
+                    return v.strip().strip('"').strip("'") or None
+    except Exception:
+        pass
+    return None
+
+
+def key_source():
+    """Where the key comes from: 'env' (RIOT_API_KEY), '.env' (repo root, dev), 'file'
+    (KEY_FILE, what Settings saves) or None. The first one that has a key wins - so a key in
+    the environment can't be replaced by pasting a new one, and the UI says so."""
+    if (os.environ.get(KEY_ENV) or "").strip():
+        return "env"
+    if _dotenv_key():
+        return ".env"
+    try:
+        with open(KEY_FILE, encoding="utf-8") as f:
+            if f.read().strip():
+                return "file"
+    except Exception:
+        pass
+    return None
+
+
+def read_key():
+    """The Riot API key: RIOT_API_KEY env var, else a git-ignored .env at the repo root (dev),
+    else KEY_FILE in the data folder. Never read from, or written into, the repo itself."""
+    k = (os.environ.get(KEY_ENV) or "").strip() or _dotenv_key()
+    if k:
+        return k
+    try:
+        with open(KEY_FILE, encoding="utf-8") as f:
+            return f.read().strip() or None
     except Exception:
         return None
+
+
+def save_key(key):
+    """Persist a pasted key to KEY_FILE (the data folder, outside the repo). Raises OSError."""
+    os.makedirs(os.path.dirname(KEY_FILE), exist_ok=True)
+    tmp = f"{KEY_FILE}.{os.getpid()}.tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        f.write((key or "").strip())
+    os.replace(tmp, KEY_FILE)
 
 
 def key_ok(key):
@@ -756,7 +802,7 @@ def iter_scout_struct(dd, count=10):
     {cid, role, is_ally, is_me, n, w, cg, cw, form} — or a single {'error': ...}."""
     key = read_key()
     if not key:
-        yield {"error": "No Riot API key file (~/.riot_api_key)."}
+        yield {"error": "No Riot API key (Settings -> Riot API key, or RIOT_API_KEY)."}
         return
     if key_ok(key) is False:             # confirmed bad key (via the non-Cloudflare status host)
         yield {"error": "Riot key rejected (401/403) - open the overlay key bar (Get key) to update it."}

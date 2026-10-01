@@ -28,7 +28,6 @@ EMBER, EMBER_DEEP, ARC = skin.EMBER, skin.EMBER_DEEP, skin.ARC
 GOOD, BAD, WARN = skin.GOOD, skin.BAD, skin.WARN
 BODY, SMALL = skin.BODY, skin.SMALL
 HERE = os.path.dirname(os.path.abspath(__file__))
-KEY_FILES = [os.path.expanduser("~/.riot_api_key"), os.path.expanduser("~/.riot_api_key.txt")]
 
 
 def _single_instance():
@@ -663,13 +662,16 @@ def main():
     key_status = tk.Label(keyfr.body, text="", bg=SURFACE, fg=MUTED, font=skin.body(SMALL),
                           anchor="w", justify="left")
     key_status.pack(fill="x", padx=12, pady=(2, 8))
-    tk.Label(keyfr.body, text="Saved to ~/.riot_api_key and ~/.riot_api_key.txt", bg=SURFACE,
-             fg=MUTED, font=skin.body(SMALL)).pack(anchor="w", padx=12, pady=(0, 8))
+    tk.Label(keyfr.body, text=f"Saved to {ls.KEY_FILE} (outside the repo). A RIOT_API_KEY "
+             "environment variable, if set, takes priority.", bg=SURFACE, fg=MUTED,
+             font=skin.body(SMALL), justify="left", anchor="w",
+             wraplength=430).pack(fill="x", padx=12, pady=(0, 8))
 
     def refresh_key_label():
         k = ls.read_key()
+        src = {"env": " (from RIOT_API_KEY)", ".env": " (from .env)"}.get(ls.key_source(), "")
         if k and k.startswith("RGAPI-"):
-            keylbl.config(text=f"...{k[-4:]} set", fg=GOOD)
+            keylbl.config(text=f"...{k[-4:]} set{src}", fg=GOOD)
         else:
             keylbl.config(text="not set", fg=BAD)
 
@@ -692,16 +694,18 @@ def main():
         if not (k.startswith("RGAPI-") and len(k) >= 24):
             key_status.config(text="that doesn't look like an RGAPI-... key", fg=BAD)
             return
-        for p in KEY_FILES:
-            try:
-                with open(p, "w", encoding="utf-8") as f:
-                    f.write(k)
-            except Exception as e:
-                key_status.config(text=f"save failed: {e}", fg=BAD)
-                return
+        try:
+            ls.save_key(k)
+        except Exception as e:
+            key_status.config(text=f"save failed: {e}", fg=BAD)
+            return
         key_entry.delete(0, "end")
         refresh_key_label()
-        key_status.config(text=f"saved ...{k[-4:]} - applies next game", fg=GOOD)
+        if ls.key_source() in ("env", ".env"):
+            key_status.config(text="saved, but RIOT_API_KEY still wins - change it there",
+                              fg=WARN)
+        else:
+            key_status.config(text=f"saved ...{k[-4:]} - applies next game", fg=GOOD)
 
     bfr = tk.Frame(keyfr.body, bg=SURFACE)
     bfr.pack(fill="x", padx=10, pady=(0, 8))
