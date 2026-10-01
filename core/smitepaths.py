@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """smitepaths.py - the one place that decides where the app keeps its files.
 
-Everything the app writes lives under ONE per-user folder, %APPDATA%\\Smiteless - never in the
+Everything the app writes lives under ONE per-user folder, %APPDATA%\\Per-Ax - never in the
 repo and never inside another tool's folder (it used to share ~/.claude with Claude Code):
 
     settings.json            the settings store (smiteconfig)
@@ -13,11 +13,11 @@ repo and never inside another tool's folder (it used to share ~/.claude with Cla
                              safe to delete, it's rebuilt on demand
 
 The AHK trays can't import this, so they spell the same folder out literally
-(EnvGet("APPDATA") "\\Smiteless\\..."); keep them in sync if APP_NAME ever changes.
+(EnvGet("APPDATA") "\\Per-Ax\\..."); keep them in sync if APP_NAME ever changes.
 """
 import os
 
-APP_NAME = "Smiteless"
+APP_NAME = "Per-Ax"
 
 DATA_DIR = os.path.join(os.environ.get("APPDATA") or os.path.expanduser("~"), APP_NAME)
 LOG_DIR = os.path.join(DATA_DIR, "logs")

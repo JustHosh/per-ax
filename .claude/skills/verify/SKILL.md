@@ -1,14 +1,14 @@
 ---
 name: verify
-description: Cómo comprobar y ver los cambios de Smiteless (adaptación LAN) en esta PC sin cliente de League ni partida.
+description: Cómo comprobar y ver los cambios de Per-Ax (adaptación LAN) en esta PC sin cliente de League ni partida.
 ---
 
-# Verificar Smiteless
+# Verificar Per-Ax
 
 Repo: `C:\Users\luang\Downloads\smiteless-main`. Cada ventana se puede abrir sola (las rutas se
 resuelven con los `sys.path.insert` de cada archivo):
 
-    python smiteless_main.py <overlay|widget|settings|profile|queue|load|dead|notes>
+    python perax_main.py <overlay|widget|settings|profile|queue|load|dead|notes>
 
 ## 1. Salud general
 
@@ -32,12 +32,12 @@ advertencias.
   PrintWindow, una vista por desplazamiento.
 - `draftboard` es `docs/draft/index.html#demo` en Edge headless.
 
-Mira los PNG (salen en `%APPDATA%\Smiteless\cache\uishot`). Un cambio de color sin captura no
+Mira los PNG (salen en `%APPDATA%\Per-Ax\cache\uishot`). Un cambio de color sin captura no
 cuenta como verificado.
 
 ## 3. Lo que no se puede probar aquí
 
-- **AutoHotkey no está instalado.** `smiteless.ahk`, `dist/tray.ahk` y `dist/installer.ahk` no
+- **AutoHotkey no está instalado.** `perax.ahk`, `dist/tray.ahk` y `dist/installer.ahk` no
   se pueden validar: cambios mínimos, sintaxis v2 simple y revisión a mano.
 - Sin cliente ni partida no corren la LCU ni `:2999`: prueba las funciones puras con fixtures
   o con sesiones falsas (como hacen los checks del selftest), no en vivo.

@@ -108,7 +108,7 @@ def _render_cue(cue, vol=30):
 
 def _cue_path(thr, vol=30):
     vol = int(max(0, min(100, vol)))
-    p = os.path.join(tempfile.gettempdir(), f"smiteless_drake_{_CHIME_VER}_{thr}_{vol}.wav")
+    p = os.path.join(tempfile.gettempdir(), f"perax_drake_{_CHIME_VER}_{thr}_{vol}.wav")
     try:
         if os.path.exists(p) and os.path.getsize(p) > 1000:
             return p
@@ -156,7 +156,7 @@ _TTS_HDRS = {"User-Agent": "Mozilla/5.0", "Referer": "https://ttsmp3.com/"}
 def _tts_salli(name, text):
     """Render `text` with the Salli voice (ttsmp3.com) to a cached MP3. None on any failure
     (offline / rate-limited) — callers fall back to the local Windows voice."""
-    p = os.path.join(tempfile.gettempdir(), f"smiteless_salli_{_SALLI_VER}_{name}.mp3")
+    p = os.path.join(tempfile.gettempdir(), f"perax_salli_{_SALLI_VER}_{name}.mp3")
     try:
         if os.path.exists(p) and os.path.getsize(p) > 800:
             return p
@@ -193,7 +193,7 @@ def _mci(cmd):
 def _tts_path(name, text, vol=30):
     """Render `text` to a cached WAV via the built-in Windows speech synth. None on failure."""
     vol = int(max(0, min(100, vol)))
-    p = os.path.join(tempfile.gettempdir(), f"smiteless_voice_{_VOICE_VER}_{name}_{vol}.wav")
+    p = os.path.join(tempfile.gettempdir(), f"perax_voice_{_VOICE_VER}_{name}_{vol}.wav")
     try:
         if os.path.exists(p) and os.path.getsize(p) > 1000:
             return p
@@ -1015,7 +1015,7 @@ def _render_legend(W=330):
 
 
 def acquire_single_instance():
-    _kernel32.CreateMutexW(None, False, "Global\\SmitelessWidget")
+    _kernel32.CreateMutexW(None, False, "Global\\PerAxWidget")
     return _kernel32.GetLastError() != 183                # ERROR_ALREADY_EXISTS
 
 
@@ -1075,11 +1075,11 @@ def main():
     hdr = tk.Frame(outer, bg=SURFACE)                     # header strip
     hdr.pack(fill="x")
     # Header (Duskfall, docs/UIDESIGN.md §5.3): the strip stays — it's the drag handle plus
-    # live controls — but now carries the '✦ SMITELESS TEMPO' brand row instead of a bare
+    # live controls — but now carries the '✦ PER-AX TEMPO' brand row instead of a bare
     # glyph. Every control still rests at MUTED and only brightens under the cursor.
     tk.Label(hdr, text=" " + skin.BRAND_MARK, font=skin.display(skin.SMALL, bold=True),
              fg=EMBER, bg=SURFACE).pack(side="left")
-    tk.Label(hdr, text=" SMITELESS", font=skin.display(skin.SMALL, bold=True), fg=TXT,
+    tk.Label(hdr, text=" PER-AX", font=skin.display(skin.SMALL, bold=True), fg=TXT,
              bg=SURFACE).pack(side="left")
     tk.Label(hdr, text=" TEMPO", font=skin.display(skin.SMALL), fg=MUTED,
              bg=SURFACE).pack(side="left")
@@ -1251,7 +1251,7 @@ def main():
         lo.pack(padx=1, pady=1, fill="both", expand=True)
         lh = tk.Frame(lo, bg=SURFACE)
         lh.pack(fill="x")
-        # same '✦ SMITELESS <SUFFIX>' brand treatment as the main header (§4/§5.3), suffix LEGEND
+        # same '✦ PER-AX <SUFFIX>' brand treatment as the main header (§4/§5.3), suffix LEGEND
         tk.Label(lh, text=" " + skin.BRAND_MARK, font=skin.display(skin.SMALL, bold=True),
                  fg=EMBER, bg=SURFACE).pack(side="left")
         tk.Label(lh, text=" LEGEND", font=skin.display(skin.SMALL, bold=True), fg=EMBER,

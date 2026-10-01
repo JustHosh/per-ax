@@ -2,20 +2,20 @@
 #SingleInstance Force
 
 ; ============================================================
-; SmitelessSetup.exe - self-contained installer (compiled from this script with the whole
+; PerAxSetup.exe - self-contained installer (compiled from this script with the whole
 ; app embedded as payload.zip). Needs nothing pre-installed: Python, Pillow and AutoHotkey
 ; are all inside the payload.
 ;
-;   SmitelessSetup.exe              show the install window (normal use)
-;   SmitelessSetup.exe /upgrade     silent reinstall over the existing copy (used by the updater)
-;   SmitelessSetup.exe /uninstall   remove Smiteless
+;   PerAxSetup.exe              show the install window (normal use)
+;   PerAxSetup.exe /upgrade     silent reinstall over the existing copy (used by the updater)
+;   PerAxSetup.exe /uninstall   remove Per-Ax
 ;
-; Installs to %LOCALAPPDATA%\Smiteless and makes Desktop + Start Menu shortcuts. "Start with
+; Installs to %LOCALAPPDATA%\Per-Ax and makes Desktop + Start Menu shortcuts. "Start with
 ; Windows" is a checkbox (the HKCU Run value Settings -> Startup also toggles); a silent
 ; /upgrade leaves that choice exactly as it was.
 ; ============================================================
 
-APPNAME := "Smiteless"
+APPNAME := "Per-Ax"
 PUBLISHER := "JustHosh"
 TARGET := EnvGet("LOCALAPPDATA") "\" APPNAME
 REGKEY := "HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\" APPNAME
@@ -43,7 +43,7 @@ g.BackColor := "0x11131A"
 g.SetFont("s10 cWhite", "Segoe UI")
 g.MarginX := 22, g.MarginY := 18
 g.SetFont("s15 bold c0xC8AA6E")
-g.Add("Text", , "Smiteless")
+g.Add("Text", , "Per-Ax")
 g.SetFont("s10 cWhite")
 g.Add("Text", "y+8 w430", "A League of Legends champ-select and in-game overlay.")
 g.Add("Text", "y+12 w430 c0x9B988E",
@@ -67,12 +67,12 @@ GuiInstall(*) {
     status.Value := "Installing..."
     DoInstall(true, false, startWin.Value ? 1 : 0)
     if startWin.Value
-        status.Value := "Done!  Smiteless is starting and will run with Windows."
+        status.Value := "Done!  Per-Ax is starting and will run with Windows."
     else
-        status.Value := "Done!  Smiteless is starting (it will not start with Windows)."
+        status.Value := "Done!  Per-Ax is starting (it will not start with Windows)."
     btn.Text := "Finish", btn.Enabled := true
     btn.OnEvent("Click", (*) => ExitApp())
-    MsgBox("Smiteless is installed and running.`n`nLook for the gold 'S' icon near your clock "
+    MsgBox("Per-Ax is installed and running.`n`nLook for the gold 'P' icon near your clock "
         . "(click the ^ arrow if you don't see it). Press Ctrl+Alt+X any time to open it.",
         APPNAME, "Iconi")
     ExitApp()
@@ -82,13 +82,13 @@ GuiInstall(*) {
 DoInstall(launch, upgraded := false, startup := -1) {
     global TARGET, REGKEY, APPNAME, PUBLISHER, RUNKEY
     ; stop any running copy so files aren't locked
-    RunWait(A_ComSpec ' /c taskkill /F /IM Smiteless.exe /IM SmitelessApp.exe >nul 2>nul', , "Hide")
+    RunWait(A_ComSpec ' /c taskkill /F /IM PerAx.exe /IM PerAxApp.exe >nul 2>nul', , "Hide")
     Sleep(400)
     DirCreate(TARGET)
     ; extract the embedded payload (Expand-Archive reads the Compress-Archive zip reliably)
-    tmp := A_Temp "\smiteless_payload.zip"
+    tmp := A_Temp "\perax_payload.zip"
     FileInstall("payload.zip", tmp, 1)
-    psfile := A_Temp "\smiteless_extract.ps1"
+    psfile := A_Temp "\perax_extract.ps1"
     try FileDelete(psfile)
     FileAppend("Expand-Archive -LiteralPath '" tmp "' -DestinationPath '" TARGET "' -Force", psfile)
     RunWait('powershell -NoProfile -ExecutionPolicy Bypass -File "' psfile '"', , "Hide")
@@ -98,18 +98,16 @@ DoInstall(launch, upgraded := false, startup := -1) {
     try FileCopy(A_ScriptFullPath, TARGET "\Uninstall.exe", 1)
     ; shortcuts (Desktop, Start Menu). Autostart is the HKCU Run value, never a Startup-folder
     ; shortcut: one mechanism, the same one Settings -> "Start with Windows" toggles.
-    ico := TARGET "\assets\smiteless.ico"
-    exe := TARGET "\Smiteless.exe"
-    FileCreateShortcut(exe, A_Desktop "\Smiteless.lnk", TARGET, , APPNAME, ico)
-    hadLegacy := FileExist(A_Startup "\Smiteless.lnk")   ; older installs used a Startup shortcut:
-    try FileDelete(A_Startup "\Smiteless.lnk")          ;   an upgrade turns it into the Run value
-    if (startup = 1 || (startup = -1 && hadLegacy))
+    ico := TARGET "\assets\perax.ico"
+    exe := TARGET "\PerAx.exe"
+    FileCreateShortcut(exe, A_Desktop "\Per-Ax.lnk", TARGET, , APPNAME, ico)
+    if (startup = 1)
         RegWrite('"' exe '"', "REG_SZ", RUNKEY, APPNAME)
     else if (startup = 0)
         try RegDelete(RUNKEY, APPNAME)
     DirCreate(A_Programs "\" APPNAME)
-    FileCreateShortcut(exe, A_Programs "\" APPNAME "\Smiteless.lnk", TARGET, , APPNAME, ico)
-    FileCreateShortcut(TARGET "\Uninstall.exe", A_Programs "\" APPNAME "\Uninstall Smiteless.lnk",
+    FileCreateShortcut(exe, A_Programs "\" APPNAME "\Per-Ax.lnk", TARGET, , APPNAME, ico)
+    FileCreateShortcut(TARGET "\Uninstall.exe", A_Programs "\" APPNAME "\Uninstall Per-Ax.lnk",
         TARGET, "/uninstall", "Uninstall " APPNAME, ico)
     ; Add/Remove Programs entry
     ver := "1.0.0"
@@ -129,11 +127,11 @@ DoInstall(launch, upgraded := false, startup := -1) {
     if (launch) {
         ; If the expected exe is missing (AV/quarantine or extraction issue), try common fallback paths
         if (!FileExist(exe)) {
-            alt := TARGET "\app\SmitelessApp\SmitelessApp.exe"
+            alt := TARGET "\app\PerAxApp\PerAxApp.exe"
             if (FileExist(alt)) {
                 exe := alt
             } else {
-                MsgBox("Installation finished but the launcher exe wasn't found.\n\nThis can happen if antivirus quarantined files or extraction failed.\nPlease check " TARGET " and re-run Smiteless.exe if present.", APPNAME, "Iconi")
+                MsgBox("Installation finished but the launcher exe wasn't found.\n\nThis can happen if antivirus quarantined files or extraction failed.\nPlease check " TARGET " and re-run PerAx.exe if present.", APPNAME, "Iconi")
                 return
             }
         }
@@ -143,16 +141,15 @@ DoInstall(launch, upgraded := false, startup := -1) {
 
 Uninstall() {
     global TARGET, REGKEY, APPNAME, RUNKEY
-    RunWait(A_ComSpec ' /c taskkill /F /IM Smiteless.exe /IM SmitelessApp.exe >nul 2>nul', , "Hide")
+    RunWait(A_ComSpec ' /c taskkill /F /IM PerAx.exe /IM PerAxApp.exe >nul 2>nul', , "Hide")
     Sleep(400)
-    try FileDelete(A_Desktop "\Smiteless.lnk")
-    try FileDelete(A_Startup "\Smiteless.lnk")
+    try FileDelete(A_Desktop "\Per-Ax.lnk")
     try RegDelete(RUNKEY, APPNAME)
     try DirDelete(A_Programs "\" APPNAME, true)
     try RegDeleteKey(REGKEY)
     ; remove the install folder. Uninstall.exe runs from INSIDE it, so a detached batch
     ; retries rmdir until the exe has exited and the folder unlocks, then deletes itself.
-    bat := A_Temp "\smiteless_uninstall.bat"
+    bat := A_Temp "\perax_uninstall.bat"
     try FileDelete(bat)
     FileAppend('@echo off`r`n'
         . ':retry`r`n'

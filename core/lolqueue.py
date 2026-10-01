@@ -5,7 +5,7 @@ The single cheapest source of LP per hour in solo queue is not playing the games
 going to lose. Everyone knows the folklore ("don't queue on tilt"); almost nobody knows
 their OWN numbers, and the numbers are the only thing that makes the call obeyable.
 
-Smiteless already computes these splits - lolprofile._patterns() slices your history by
+Per-Ax already computes these splits - lolprofile._patterns() slices your history by
 after-a-loss, deep-sitting and time-of-day - but it renders them on the profile page,
 which you open *after* the session that cost you the LP. This module answers the same
 question at the one moment it can change a decision: you're sitting in the lobby with the
@@ -228,7 +228,7 @@ def call(games, now=None):
 
     if n < MIN_BASE:
         out["sub"] = (f"no read yet — {n} of {MIN_BASE} ranked games logged. "
-                      f"Smiteless only calls it off your own history.")
+                      f"Per-Ax only calls it off your own history.")
         return out
 
     # The buckets the NEXT game falls into. Each is a slice of your own history taken with

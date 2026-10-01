@@ -1,4 +1,4 @@
-"""smiteskin.py - the Smiteless "Duskfall" design system (v1.0). See docs/UIDESIGN.md.
+"""smiteskin.py - the Per-Ax "Duskfall" design system (v1.0). See docs/UIDESIGN.md.
 
 The ONE place colors, type, and spacing live. Every window (Tk chrome and PIL boards
 alike) imports from here - never re-declare a hex or a font family in a surface file.
@@ -151,12 +151,12 @@ def wr_color(wr):
 # ---- shared Tk widget factories (chrome consistency without a framework) ----
 
 def brand_row(parent, suffix="", bg=None):
-    """The '✦ SMITELESS <SUFFIX>' identity row every window opens with. Returns the Frame."""
+    """The '✦ PER-AX <SUFFIX>' identity row every window opens with. Returns the Frame."""
     import tkinter as tk
     bg = bg or VOID
     fr = tk.Frame(parent, bg=bg)
     tk.Label(fr, text=BRAND_MARK, bg=bg, fg=EMBER, font=display(H1)).pack(side="left")
-    tk.Label(fr, text=" SMITELESS", bg=bg, fg=TXT, font=display(H1)).pack(side="left")
+    tk.Label(fr, text=" PER-AX", bg=bg, fg=TXT, font=display(H1)).pack(side="left")
     if suffix:
         tk.Label(fr, text=" " + suffix.upper(), bg=bg, fg=MUTED,
                  font=display(H1)).pack(side="left")

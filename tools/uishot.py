@@ -7,7 +7,7 @@ No League client or game needed: champ select and the widget are drawn from demo
 the real render functions; Settings is the real Tk window, opened invisibly (alpha 0, no focus
 steal) and captured viewport by viewport with PrintWindow; the DraftBoard page is screenshot in
 headless Edge in its #demo mode. With no surface named it renders all four. Output defaults to
-%APPDATA%\\Smiteless\\cache\\uishot.
+%APPDATA%\\Per-Ax\\cache\\uishot.
 """
 import ctypes
 import os

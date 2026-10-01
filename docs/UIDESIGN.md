@@ -1,6 +1,6 @@
-# Smiteless UI — "Duskfall" design system (v1.0)
+# Per-Ax UI — "Duskfall" design system (v1.0)
 
-A from-scratch redesign of every Smiteless surface. The previous pass (Council
+A from-scratch redesign of every Per-Ax surface. The previous pass (Council
 v0.9.1) unified a drifted palette but kept the same colors, type, and layout —
 so it read as identical. Duskfall changes the things the eye actually keys on:
 **hue of the ground, temperature of the accent, the typeface of numbers and
@@ -87,7 +87,7 @@ Rules:
 
 Scale (pt for Tk, px for PIL roughly 1.33×):
 
-- `H1` 16 Bahnschrift — window titles ("SMITELESS")
+- `H1` 16 Bahnschrift — window titles ("PER-AX")
 - `H2` 12 Bahnschrift — section headers, ALL-CAPS, `EMBER`
 - `BODY` 10 Segoe UI — standard text (was 8–9: **body text gets bigger**)
 - `SMALL` 9 Segoe UI — descriptions, `MUTED`
@@ -108,9 +108,9 @@ Graceful fallback: if Bahnschrift is missing (old Win10 LTSB), fall back to
   `H2 header — hairline to the right edge` instead of floating gold labels.
 - Buttons: flat `RAISED` fill, `TXT` ink, radius 8, hover `HOVER`; the ONE
   primary action per window is `EMBER` fill with `VOID` ink.
-- Brand row (every window/board top-left): `✦` in `EMBER` + `SMITELESS` in
-  Bahnschrift `TXT` + surface-specific suffix in `MUTED` (e.g. `✦ SMITELESS
-  TEMPO`, `✦ SMITELESS SETTINGS`).
+- Brand row (every window/board top-left): `✦` in `EMBER` + `PER-AX` in
+  Bahnschrift `TXT` + surface-specific suffix in `MUTED` (e.g. `✦ PER-AX
+  TEMPO`, `✦ PER-AX SETTINGS`).
 
 ## 5. Per-surface specs
 
@@ -141,7 +141,7 @@ Graceful fallback: if Bahnschrift is missing (old Win10 LTSB), fall back to
 
 ### 5.3 Tempo widget (smitewidget.py)
 
-- Header strip: `✦ SMITELESS TEMPO` brand row on `SURFACE`, controls (♪, ?, ✕)
+- Header strip: `✦ PER-AX TEMPO` brand row on `SURFACE`, controls (♪, ?, ✕)
   as `MUTED`→`TXT` hover glyphs, `ARC` live-dot when a game is being read.
 - Body on `VOID`; item rows keep kind-coloring but remapped: core `TXT`,
   insert `EMBER`, counter `BAD`, antiheal `MYSTIC`, boots `INFO`.
@@ -163,7 +163,7 @@ Graceful fallback: if Bahnschrift is missing (old Win10 LTSB), fall back to
 ### 5.5 Settings (smitesettings.py)
 
 - Window ground `VOID`, gutters `PAD_WIN`.
-- Title: brand row (`✦ SMITELESS SETTINGS` H1) + version chip pill (`MUTED`).
+- Title: brand row (`✦ PER-AX SETTINGS` H1) + version chip pill (`MUTED`).
 - Every section header → labeled rule (H2 `EMBER` + `LINE_SOFT` hairline).
 - Sliders: trough `SUNKEN`, active `EMBER`, value readout in Bahnschrift
   `ARC` (it's a number).

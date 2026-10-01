@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""selftest.py - one-command health check for Smiteless.
+"""selftest.py - one-command health check for Per-Ax.
 
 Verifies every external dependency the overlay relies on, so you can tell at a glance
 what's working - handy after a Riot dev-key rotation (they expire every 24h) or a new
@@ -493,7 +493,7 @@ def c_ward():
 def c_out():
     """THE OUT (core/lolout) — the losing game. This is the highest-consequence verdict in
     the whole app: CALL IT tells a player their game is over, and a CALL IT on a winnable
-    game is the single worst thing Smiteless could ever put on screen. So the guards here
+    game is the single worst thing Per-Ax could ever put on screen. So the guards here
     are mostly about what it must NOT do — plus the structural promise that it and the
     CLOSER are one read of the same map and can never both be talking."""
     import lolout as lo, lolclose as lc, lollive as ll
@@ -1053,7 +1053,7 @@ def c_noinput():
                 continue
             src = open(os.path.join(folder, f), encoding="utf-8").read()
             hits += [f"{d}/{f}: {api}" for api in _INPUT_APIS if api in src]
-    for rel in ("smiteless.ahk", os.path.join("dist", "tray.ahk"),
+    for rel in ("perax.ahk", os.path.join("dist", "tray.ahk"),
                 os.path.join("dist", "installer.ahk")):
         p = os.path.join(_ROOT, rel)
         if os.path.exists(p) and _AHK_SEND.search(open(p, encoding="utf-8").read()):
@@ -1437,7 +1437,7 @@ def c_noautopilot():
                 continue
             src = open(os.path.join(folder, f), encoding="utf-8").read()
             hits += [f"{d}/{f}: {m}" for m in _AUTOPILOT if m in src]
-    for rel in ("smiteless.ahk", os.path.join("dist", "tray.ahk")):
+    for rel in ("perax.ahk", os.path.join("dist", "tray.ahk")):
         p = os.path.join(_ROOT, rel)
         if os.path.exists(p) and "ready-check/accept" in open(p, encoding="utf-8").read():
             hits.append(f"{rel}: ready-check/accept")
@@ -1459,7 +1459,7 @@ def c_lcu():
 
 
 def main():
-    print("\nSMITELESS SELF-TEST")
+    print("\nPER-AX SELF-TEST")
     print("=" * 66)
     checks = [
         ("Pillow (image render)", c_pillow),

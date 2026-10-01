@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>DraftBoard — live champ select</title>
-<meta name="description" content="Live champ-select board: picks, bans, and per-seat champion suggestions with runes. Sent from Smiteless.">
+<meta name="description" content="Live champ-select board: picks, bans, and per-seat champion suggestions with runes. Sent from Per-Ax.">
 <style>
-/* Duskfall (the Smiteless design system, see docs/UIDESIGN.md) — deliberately dark-only:
+/* Duskfall (the Per-Ax design system, see docs/UIDESIGN.md) — deliberately dark-only:
    League client at dusk, lit by an ember. Tokens mirror core/smiteskin.py. */
 :root{
   --void:#0c0a13; --surface:#15121f; --raised:#1e1930; --hover:#2a2342; --sunken:#07060b;
@@ -318,13 +318,13 @@ footer{margin-top:30px;color:var(--faint);font-size:12px;display:flex;gap:8px;
     <span class="chip" id="status"><span class="dot"></span><span id="statustxt">connecting</span></span>
   </header>
   <p class="tagline" id="tagline">Sent from champ select by a teammate running
-    <a class="repolink" href="#" rel="noopener">Smiteless</a> (free, open
+    <a class="repolink" href="#" rel="noopener">Per-Ax</a> (free, open
     source). Hit <b style="color:var(--ember)">This is me</b> on your seat for picks &amp; runes
     tuned to this draft — it updates live as the lobby locks in.</p>
   <div id="app"></div>
   <footer>
     <span>No accounts, no tracking — this page only reads the draft your teammate published.</span>
-    <span>·</span><a class="repolink" href="#" rel="noopener">get Smiteless</a>
+    <span>·</span><a class="repolink" href="#" rel="noopener">get Per-Ax</a>
   </footer>
 </div>
 
@@ -370,7 +370,7 @@ const TREES = {8000:"Precision",8100:"Domination",8200:"Sorcery",8300:"Inspirati
    so a blocked CDN degrades to names + monograms instead of broken images. */
 const state = {pay:null, meta:{champ:{}, rune:{}, spellImg:{}, ver:""}, metaReady:false,
                claimed:null, live:"connecting", noArt:H.demo, liveSts:0, liveRef:0};
-const claimKey = "smiteless-claim-" + (H.d || "demo");
+const claimKey = "perax-claim-" + (H.d || "demo");
 try { const c = localStorage.getItem(claimKey); if (c !== null) state.claimed = +c; } catch (e) {}
 
 /* ============ ddragon hydration (viewer-side; Riot's public CDN, CORS-open) ============ */
@@ -721,7 +721,7 @@ function render(){
     if (sub) sub.textContent = "live scout";
     if (tag) tag.innerHTML = "The whole lobby, scouted — rank, recent form, and how each "
       + "account actually plays, read from public match history. Shared from "
-      + '<a class="repolink" href="' + REPO_URL + '" rel="noopener">Smiteless</a>.';
+      + '<a class="repolink" href="' + REPO_URL + '" rel="noopener">Per-Ax</a>.';
     const th = hasScout ? p.scout.threat : null;
     if (threat){
       if (th && th.c){

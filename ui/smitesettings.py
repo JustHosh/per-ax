@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""smitesettings.py - Smiteless settings window (Tk). Launched from the tray menu.
+"""smitesettings.py - Per-Ax settings window (Tk). Launched from the tray menu.
 
 A normal (focusable) window - unlike the overlay - so you can tweak it like any dialog.
 Everything it saves is read live by the overlay (smitecard.apply_settings each frame).
@@ -32,7 +32,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 
 def _single_instance():
     k = ctypes.windll.kernel32
-    k.CreateMutexW(None, False, "Global\\SmitelessSettings")
+    k.CreateMutexW(None, False, "Global\\PerAxSettings")
     return k.GetLastError() != 183   # ERROR_ALREADY_EXISTS
 
 
@@ -43,12 +43,12 @@ def main():
     s = cfg.load()
     root = tk.Tk()
     cfg.watch_tray(root)                        # close with the tray (no orphan settings window)
-    root.title("Smiteless Settings")
+    root.title("Per-Ax Settings")
     root.configure(bg=VOID)
     skin.dark_titlebar(root)
     root.resizable(True, True)
     try:
-        root.iconbitmap(os.path.join(HERE, "smiteless.ico"))
+        root.iconbitmap(os.path.join(HERE, "perax.ico"))
     except Exception:
         pass
 
@@ -434,7 +434,7 @@ def main():
     ])
     tk.Label(body, text="Hides ally chat and all-chat and silences ping audio, by writing "
              "League's OWN settings through the client — nothing is typed into the game, and "
-             "Smiteless reads the setting back to confirm it took. Two honest limits: ping "
+             "Per-Ax reads the setting back to confirm it took. Two honest limits: ping "
              "MARKERS still draw on the minimap (the client has no setting for those), and "
              "because it's a client setting it PERSISTS until you turn it off — here, or in "
              "League's own Audio/Interface settings.",

@@ -1,4 +1,4 @@
-# Smiteless (adaptación LAN) — notas para Claude
+# Per-Ax (adaptación LAN) — notas para Claude
 
 Fork independiente de Smiteless (bobbyroylee, MIT) adaptado para jugar en LAN y para cumplir
 las políticas de desarrolladores de Riot. Windows, Python (ventanas Tk + tableros renderizados
@@ -21,18 +21,18 @@ respuestas en español; la interfaz de la app sigue en inglés hasta la traducci
 - Nada de anuncios dentro del juego ni de timers de habilidades enemigas.
 
 ## Dónde vive cada cosa
-- `core/` lógica, `ui/` ventanas, `tools/` utilidades; `smiteless_main.py` es la entrada única
+- `core/` lógica, `ui/` ventanas, `tools/` utilidades; `perax_main.py` es la entrada única
   del exe congelado.
-- `core/smitepaths.py`: todas las rutas. Los datos van en `%APPDATA%\Smiteless`, nunca en el
+- `core/smitepaths.py`: todas las rutas. Los datos van en `%APPDATA%\Per-Ax`, nunca en el
   repo ni en `~/.claude`. Los trays AHK escriben la misma carpeta a mano.
 - `core/smiteconfig.py`: ajustes, `REGIONS` y `region()` / `routing()` (LAN por defecto).
 - Clave de Riot: `lolscout.read_key()` / `save_key()` (RIOT_API_KEY > `.env` > archivo).
-- Datos propios: `tools/collector.py` (CLI, match-v5 -> `%APPDATA%\Smiteless\matches.sqlite`) y
+- Datos propios: `tools/collector.py` (CLI, match-v5 -> `%APPDATA%\Per-Ax\matches.sqlite`) y
   `core/lolrecommend.py` (esquema + recomendador fase 1). `lolitems.data_pick()` es el único
   punto donde el widget lo consulta. Nunca guardar nombres ni PUUIDs de los jugadores de esas
   partidas (el check "Match collector" lo vigila).
 - Updater: `REPO` en `tools/smiteupdate.py` y `UPDATE_REPO` en `dist/tray.ahk`. Vacíos =
-  apagado. Solo se apuntan a un repo propio con releases que lleven `SmitelessSetup.exe`.
+  apagado. Solo se apuntan a un repo propio con releases que lleven `PerAxSetup.exe`.
 - Módulo nuevo en `core/` o `ui/`: agrégalo a `$hidden` en `dist/build.ps1` (el selftest falla
   si falta; PyInstaller no ve los imports perezosos).
 

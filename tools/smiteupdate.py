@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """smiteupdate.py - notify + one-click updater.
 
-On launch the tray runs `SmitelessApp.exe update`. This checks the GitHub Releases API for
+On launch the tray runs `PerAxApp.exe update`. This checks the GitHub Releases API for
 a newer version than the local VERSION file; if there is one, it shows a small window with
-an Update button. Clicking Update downloads that release's SmitelessSetup.exe and runs it
+an Update button. Clicking Update downloads that release's PerAxSetup.exe and runs it
 (the installer closes the running app, lays the new files down, and relaunches). If we're
 up to date or offline, it exits silently.
 
@@ -19,12 +19,12 @@ import urllib.request
 
 # The GitHub repo ("owner/name") whose Releases this copy updates from. EMPTY = updates OFF.
 # Only ever point it at a repo you control and that publishes releases with a
-# SmitelessSetup.exe asset: the updater downloads and RUNS whatever installer that repo's
+# PerAxSetup.exe asset: the updater downloads and RUNS whatever installer that repo's
 # latest release carries. dist/tray.ahk spells the same value out as UPDATE_REPO - keep the
 # two in sync.
 REPO = ""
 API = f"https://api.github.com/repos/{REPO}/releases/latest" if REPO else ""
-UA = "Smiteless-Updater"
+UA = "Per-Ax-Updater"
 
 # Duskfall skin, guarded: the updater must never die over cosmetics. Frozen builds bundle
 # smiteskin; dev runs get core/ inserted here; if anything fails, a frozen fallback of the
@@ -51,7 +51,7 @@ except Exception:
 
 
 def install_root():
-    """The folder that holds VERSION + Smiteless.exe. Frozen layout: <root>/app/SmitelessApp.exe."""
+    """The folder that holds VERSION + PerAx.exe. Frozen layout: <root>/app/PerAxApp.exe."""
     if getattr(sys, "frozen", False):
         return os.path.dirname(os.path.dirname(sys.executable))
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # tools/ -> repo root
@@ -89,7 +89,7 @@ def latest_release():
     tag = d.get("tag_name")
     url = None
     for a in d.get("assets", []):
-        if a.get("name", "").lower() == "smitelesssetup.exe":
+        if a.get("name", "").lower() == "peraxsetup.exe":
             url = a.get("browser_download_url")
             break
     return (tag, url) if tag and url else None
@@ -125,7 +125,7 @@ def _run_setup(cur, tag, url, with_progress=False):
             import tkinter as tk
             from tkinter import ttk
             prog = tk.Tk()
-            prog.title("Smiteless update")
+            prog.title("Per-Ax update")
             prog.configure(bg=skin.VOID)
             skin.dark_titlebar(prog)
             prog.resizable(False, False)
@@ -169,7 +169,7 @@ def _run_setup(cur, tag, url, with_progress=False):
         except Exception:
             pass
 
-    setup = os.path.join(tempfile.gettempdir(), "SmitelessSetup.exe")
+    setup = os.path.join(tempfile.gettempdir(), "PerAxSetup.exe")
     try:
         _set_status("Downloading installer...", 0)
         _download(url, setup, on_progress=lambda done, total: _set_status(
@@ -186,7 +186,7 @@ def _run_setup(cur, tag, url, with_progress=False):
     _set_status("Starting installer...", None)
     subprocess.Popen([setup, "/upgrade"], close_fds=True)
     if prog:
-        _set_status("Installer started. Smiteless will relaunch when done.", 100)
+        _set_status("Installer started. Per-Ax will relaunch when done.", 100)
         try:
             prog.after(1200, prog.destroy)
             prog.mainloop()
@@ -198,7 +198,7 @@ def _run_setup(cur, tag, url, with_progress=False):
 def _dialog(cur, tag, url):
     import tkinter as tk
     root = tk.Tk()
-    root.title("Smiteless update")
+    root.title("Per-Ax update")
     root.configure(bg=skin.VOID)
     skin.dark_titlebar(root)
     root.resizable(False, False)
@@ -208,7 +208,7 @@ def _dialog(cur, tag, url):
         pass
     wrap = tk.Frame(root, bg=skin.VOID)
     wrap.pack(padx=18, pady=16)
-    tk.Label(wrap, text="A new version of Smiteless is available",
+    tk.Label(wrap, text="A new version of Per-Ax is available",
              font=skin.display(12, bold=True), fg=skin.EMBER, bg=skin.VOID).pack(anchor="w")
     tk.Label(wrap, text=f"You have {cur}.  Latest is {tag}.",
              font=skin.body(9), fg=skin.TXT, bg=skin.VOID).pack(anchor="w", pady=(4, 12))
@@ -223,11 +223,11 @@ def _dialog(cur, tag, url):
         if not ok:
             try:
                 import tkinter.messagebox as mb
-                mb.showerror("Smiteless", "Couldn't download the update. Try again later.")
+                mb.showerror("Per-Ax", "Couldn't download the update. Try again later.")
             except Exception:
                 pass
         else:
-            _info("Update started. Smiteless will restart automatically when installation finishes.")
+            _info("Update started. Per-Ax will restart automatically when installation finishes.")
 
     later_btn = tk.Button(btns, text="Later", width=10, command=root.destroy,
                           bg=skin.RAISED, fg=skin.TXT, activebackground=skin.HOVER,
@@ -249,7 +249,7 @@ def _info(msg):
         r = tk.Tk()
         r.withdraw()
         r.attributes("-topmost", True)
-        mb.showinfo("Smiteless", msg)
+        mb.showinfo("Per-Ax", msg)
         r.destroy()
     except Exception:
         pass
@@ -262,7 +262,7 @@ def main(args=None):
     if "--check" in args:
         i = args.index("--check")
         out = (args[i + 1] if i + 1 < len(args)
-               else os.path.join(tempfile.gettempdir(), "smiteless_update.txt"))
+               else os.path.join(tempfile.gettempdir(), "perax_update.txt"))
         rel = latest_release()
         ver = rel[0] if (rel and _vtuple(rel[0]) > _vtuple(local_version())) else ""
         try:

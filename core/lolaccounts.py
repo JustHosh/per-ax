@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""lolaccounts.py - one-click Riot login (the account switcher) for Smiteless.
+"""lolaccounts.py - one-click Riot login (the account switcher) for Per-Ax.
 
 No passwords, ever. The Riot Client already keeps a "Stay signed in" session on disk
 (Riot Client\\Data - the cookie yaml - plus Config\\RiotClientSettings.yaml); this module
@@ -7,7 +7,7 @@ snapshots that whole login state per account and swaps it back in on demand - th
 approach as TcNo-Acc-Switcher / RiotSwitcher. Password login through the client's local
 API has been dead since Riot added captcha, so session-swapping is THE way this is done.
 Snapshots are DPAPI-encrypted (CryptProtectData, user-scoped): the blobs in
-%APPDATA%\\Smiteless\\accounts are unreadable to anything but this Windows user.
+%APPDATA%\\Per-Ax\\accounts are unreadable to anything but this Windows user.
 
 Setup is once per account: log in with "Stay signed in" TICKED, then "Save current login".
 "Log in" then: refuses if a game is running, closes the Riot/League clients (gracefully,
@@ -272,10 +272,10 @@ def switch(name, on_status=None):
                      creationflags=CREATE_NO_WINDOW)
 
 
-# ---------- CLI (smiteless_main routes `login <name>` / `accounts ...` here) ----------
+# ---------- CLI (perax_main routes `login <name>` / `accounts ...` here) ----------
 def _msgbox(text, flags=0x10):
     try:
-        ctypes.windll.user32.MessageBoxW(0, text, "Smiteless", flags | 0x40000)  # topmost
+        ctypes.windll.user32.MessageBoxW(0, text, "Per-Ax", flags | 0x40000)  # topmost
     except Exception:
         pass
 

@@ -2,7 +2,7 @@
 #SingleInstance Force
 
 ; ============================================================
-; Smiteless - persistent tray app.
+; Per-Ax - persistent tray app.
 ;
 ; Sits in the system tray with a right-click menu:
 ;   Open overlay | Item widget | Settings | Auto-open at champ select (toggle) | Reload | Exit
@@ -20,22 +20,22 @@ if (InStr(PYW, "\") && !FileExist(PYW))                     ; full path that doe
 SCRIPTS := A_ScriptDir          ; the .py files live in core/ ui/ tools/ under this dir
 ; ------------------------------------------------------------
 
-; Heartbeat anchor: hold the "Global\SmitelessTray" mutex for this tray's whole life. Every
+; Heartbeat anchor: hold the "Global\PerAxTray" mutex for this tray's whole life. Every
 ; surface (overlay/widget/loading/death/profile/settings) polls it and self-closes when it
-; disappears, so force-closing Smiteless leaves no orphan windows. (The Python tray already
+; disappears, so force-closing Per-Ax leaves no orphan windows. (The Python tray already
 ; holds this mutex; this makes the AHK tray hold it too.)
-DllCall("CreateMutexW", "Ptr", 0, "Int", 0, "WStr", "Global\SmitelessTray")
+DllCall("CreateMutexW", "Ptr", 0, "Int", 0, "WStr", "Global\PerAxTray")
 
-DATADIR := EnvGet("APPDATA") "\Smiteless"                ; = core\smitepaths.py DATA_DIR
+DATADIR := EnvGet("APPDATA") "\Per-Ax"                ; = core\smitepaths.py DATA_DIR
 NOAUTO := DATADIR "\noautoopen"                          ; present = auto-open OFF
 
-if FileExist(SCRIPTS "\assets\smiteless.ico")
-    TraySetIcon(SCRIPTS "\assets\smiteless.ico")
-A_IconTip := "Smiteless"
+if FileExist(SCRIPTS "\assets\perax.ico")
+    TraySetIcon(SCRIPTS "\assets\perax.ico")
+A_IconTip := "Per-Ax"
 
 tray := A_TrayMenu
 tray.Delete()                                   ; replace the default AHK menu
-tray.Add("Open overlay", (*) => OpenSmiteless(false))
+tray.Add("Open overlay", (*) => OpenPerAx(false))
 tray.Add("Profile / home", (*) => OpenProfile())
 tray.Add("Item widget", (*) => OpenWidget())
 loginMenu := Menu()
@@ -51,10 +51,10 @@ tray.Default := "Open overlay"                  ; double-click the tray icon
 RefreshAutoCheck()
 
 ; Ctrl+Alt+X opens the overlay; Ctrl+Alt+B opens the floating item widget - both global.
-^!x::OpenSmiteless(false)
+^!x::OpenPerAx(false)
 ^!b::OpenWidget()
 
-OpenSmiteless(autoMode := false) {
+OpenPerAx(autoMode := false) {
     global PYW, SCRIPTS
     waitFlag := autoMode ? " --wait" : ""       ; auto-open stays hidden until champs are present
     Run('"' PYW '" "' SCRIPTS '\ui\smiteoverlay.py"' waitFlag, , "Hide")
@@ -110,7 +110,7 @@ BuildLoginMenu() {
 }
 LoginPick(item, *) {
     global PYW, SCRIPTS
-    Run('"' PYW '" "' SCRIPTS '\smiteless_main.py" login "' item '"', , "Hide")
+    Run('"' PYW '" "' SCRIPTS '\perax_main.py" login "' item '"', , "Hide")
 }
 BuildLoginMenu()
 SetTimer(BuildLoginMenu, 15000)
@@ -147,10 +147,10 @@ SmiteWatch() {
         g_queueOpened := false
         return
     }
-    out := A_Temp "\smiteless_phase.txt"
+    out := A_Temp "\perax_phase.txt"
     ph := ""
     try ph := Trim(FileRead(out), " `t`r`n")     ; strip CR/LF (Trim's default omits them)
-    Run('"' PYW '" "' SCRIPTS '\smiteless_main.py" phase "' out '"', , "Hide")   ; writes phase to file (no console)
+    Run('"' PYW '" "' SCRIPTS '\perax_main.py" phase "' out '"', , "Hide")   ; writes phase to file (no console)
     ; "Loading" = the loading screen (:2999 is answering but the game clock hasn't started).
     ; It counts as an ACTIVE session (the loading scout belongs there) but NOT as in-game —
     ; the item widget and death brief must not paint over the loading screen.
@@ -159,7 +159,7 @@ SmiteWatch() {
     if (active) {
         if (!g_smiteOpened) {
             g_smiteOpened := true
-            OpenSmiteless(true)
+            OpenPerAx(true)
             ; LOADING SCOUT (ten splash cards) — spawns at champ select, covers the load, fades
             ; the instant the game starts. Self-gates on the `loading_scout` setting (default on).
             Run('"' PYW '" "' SCRIPTS '\ui\smiteload.py"', , "Hide")

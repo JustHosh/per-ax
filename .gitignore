@@ -35,4 +35,4 @@ dist/payload.zip
 /_attic/
 
 # Copilot accidentally committed the frozen build here; it is a build artifact
-dist/SmitelessApp/
+dist/PerAxApp/

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""smitecard.py - renders the Smiteless overlay as a scoreboard-style PNG.
+"""smitecard.py - renders the Per-Ax overlay as a scoreboard-style PNG.
 
 One image: build/runes header, both teams aligned by role (matchups paired by the
 REAL champ in each slot), a data-only gank rating per enemy lane, and a last-10 W/L
@@ -829,7 +829,7 @@ def _railed_card(d, box, rail_col, fill=None, outline=None, width=1, r=None, rai
 
 
 def _brand_row(d, x, y, size=8, anchor="la", suffix="", suffix_col=None):
-    """The '✦ SMITELESS <suffix>' identity mark every board opens with (UIDESIGN §4): the
+    """The '✦ PER-AX <suffix>' identity mark every board opens with (UIDESIGN §4): the
     spark in EMBER, the wordmark in Bahnschrift, an optional MUTED suffix. `anchor` is 'la'
     (draw rightward from x) or 'ra' (right-align the whole mark against x), matching how the
     rest of this module already anchors text. Returns the total pixel width drawn."""
@@ -837,12 +837,12 @@ def _brand_row(d, x, y, size=8, anchor="la", suffix="", suffix_col=None):
     word_f = display_font(size, True)
     suf_f = font(size, True)
     star_w = d.textlength("✦ ", font=star_f)
-    word_w = d.textlength("SMITELESS", font=word_f)
+    word_w = d.textlength("PER-AX", font=word_f)
     suf_w = d.textlength(" " + suffix, font=suf_f) if suffix else 0
     total = star_w + word_w + suf_w
     x0 = x - total if anchor == "ra" else x
     d.text((x0, y), "✦ ", font=star_f, fill=GOLD, anchor="la")
-    d.text((x0 + star_w, y), "SMITELESS", font=word_f, fill=TEXT, anchor="la")
+    d.text((x0 + star_w, y), "PER-AX", font=word_f, fill=TEXT, anchor="la")
     if suffix:
         d.text((x0 + star_w + word_w, y), " " + suffix, font=suf_f, fill=(suffix_col or MUTED), anchor="la")
     return total
@@ -932,7 +932,7 @@ def _draw_one_fix(d, b, x0, y, x1, h):
         d.text((x0 + 16, y + 46), "Your leak board opens once a few graded games are in.",
                font=font(11), fill=MUTED)
         d.text((x0 + 16, y + 68),
-               "Smiteless already grades five habits per game — first-ten economy, early "
+               "Per-Ax already grades five habits per game — first-ten economy, early "
                "deaths, chained deaths,", font=font(10), fill=FAINT)
         d.text((x0 + 16, y + 84),
                "throwing a lead, and vision. This board splits your wins by each one and "
@@ -1314,7 +1314,7 @@ def render_profile(dd, p, expanded=None, details=None, width=None):
         d.text((40 + d.textlength(name, font=nf), 178), f"#{tag}",
                font=display_font(15, True), fill=MUTED, anchor="ls")
     if best:
-        d.text((37, 108), f"✦ {best} MAIN" if (p.get("champs") or [{}])[0].get("g", 0) >= 3 else "✦ SMITELESS",
+        d.text((37, 108), f"✦ {best} MAIN" if (p.get("champs") or [{}])[0].get("g", 0) >= 3 else "✦ PER-AX",
                font=font(10, 1, "✦"), fill=_dim(GOLD, 0.95))
     # chip row: rank / record / KDA
     cy_, cx_ = 196, 36
@@ -2705,7 +2705,7 @@ def _board_scale():
 
 def _live_tags(dd, cid, sc, ally):
     """The loading screen's profile-read tags (smurf/OTP/tilt/first-time/…), driven by
-    the live scout's data. One tag language across every Smiteless surface."""
+    the live scout's data. One tag language across every Per-Ax surface."""
     try:
         import lolload as llo
         kda = sc.get("kda") or {}
@@ -3664,7 +3664,7 @@ def run(emit, count=None, wait=False, stop=None, monitor=False):
             time.sleep(3)
             continue
         # in-game: full board + matchup tip + progressive player scout
-        # LIVE DRAFT LINK: also start the publisher here, so launching Smiteless MID-GAME (after
+        # LIVE DRAFT LINK: also start the publisher here, so launching Per-Ax MID-GAME (after
         # champ select) still brings the web scoreboard + tactical board up. tick() spawns once;
         # its worker sees we're past champ select and goes straight to the scout/live phase.
         try:

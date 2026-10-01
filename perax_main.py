@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
-"""smiteless_main.py - single entry point for the bundled app.
+"""perax_main.py - single entry point for the bundled app.
 
-One frozen exe (SmitelessApp.exe) covers every window/tool; the first CLI arg picks which:
+One frozen exe (PerAxApp.exe) covers every window/tool; the first CLI arg picks which:
 
-    SmitelessApp.exe overlay        the scoreboard overlay (default)
-    SmitelessApp.exe widget         the floating item widget
-    SmitelessApp.exe dead           the fullscreen see-through DEATH BRIEF (while you're dead)
-    SmitelessApp.exe load           the LOADING-SCREEN matchup overlay (champ tags + game plan)
-    SmitelessApp.exe queue          the QUEUE CALL card (lobby only: should you play this one?)
-    SmitelessApp.exe mute           IN-GAME QUIET: League's own chat/ping settings (no typing)
-    SmitelessApp.exe settings       the settings window
-    SmitelessApp.exe phase <file>   write the LCU gameflow phase to <file> (for the tray watcher)
-    SmitelessApp.exe login <name>   one-click Riot login: swap to a saved account SESSION (no pw)
-    SmitelessApp.exe accounts ...   saved-session admin (list / save <name> / remove <name>)
-    SmitelessApp.exe update [--apply]  check GitHub for a newer release (notify / one-click)
-    SmitelessApp.exe selftest       dependency health check (dev)
+    PerAxApp.exe overlay        the scoreboard overlay (default)
+    PerAxApp.exe widget         the floating item widget
+    PerAxApp.exe dead           the fullscreen see-through DEATH BRIEF (while you're dead)
+    PerAxApp.exe load           the LOADING-SCREEN matchup overlay (champ tags + game plan)
+    PerAxApp.exe queue          the QUEUE CALL card (lobby only: should you play this one?)
+    PerAxApp.exe mute           IN-GAME QUIET: League's own chat/ping settings (no typing)
+    PerAxApp.exe settings       the settings window
+    PerAxApp.exe phase <file>   write the LCU gameflow phase to <file> (for the tray watcher)
+    PerAxApp.exe login <name>   one-click Riot login: swap to a saved account SESSION (no pw)
+    PerAxApp.exe accounts ...   saved-session admin (list / save <name> / remove <name>)
+    PerAxApp.exe update [--apply]  check GitHub for a newer release (notify / one-click)
+    PerAxApp.exe selftest       dependency health check (dev)
 
 Kept tiny on purpose so PyInstaller has a clean root to analyse.
 """
@@ -72,7 +72,7 @@ def main():
     elif cmd == "phase":
         import tempfile
         import phasecheck
-        out = rest[0] if rest else os.path.join(tempfile.gettempdir(), "smiteless_phase.txt")
+        out = rest[0] if rest else os.path.join(tempfile.gettempdir(), "perax_phase.txt")
         try:
             # DETAILED: the loading screen reports as 'Loading', so the AHK watcher can open
             # the loading scout there while holding the in-game widget back until the match
@@ -97,7 +97,7 @@ def main():
         import selftest
         selftest.main()
     else:
-        sys.stderr.write("usage: SmitelessApp.exe [overlay|widget|dead|load|queue|mute|settings|"
+        sys.stderr.write("usage: PerAxApp.exe [overlay|widget|dead|load|queue|mute|settings|"
                          "phase|login <name>|accounts|update|"
                          "selftest]\n")
 

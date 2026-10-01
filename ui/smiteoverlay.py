@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""smiteoverlay.py - the live Smiteless overlay, all in Python.
+"""smiteoverlay.py - the live Per-Ax overlay, all in Python.
 
 A borderless, always-on-top window that polls the League client/API directly and
 updates IN PLACE as champ-select picks come in and the game progresses - no PNG
@@ -53,7 +53,7 @@ _kernel32 = ctypes.windll.kernel32
 
 def acquire_single_instance():
     """True if we're the only overlay; False if one is already running."""
-    _kernel32.CreateMutexW(None, False, "Global\\SmitelessOverlay")
+    _kernel32.CreateMutexW(None, False, "Global\\PerAxOverlay")
     return _kernel32.GetLastError() != 183  # ERROR_ALREADY_EXISTS
 
 
@@ -202,7 +202,7 @@ def _open_profile():
     import subprocess
     try:
         if getattr(sys, "frozen", False):
-            subprocess.Popen([sys.executable, "profile"], close_fds=True)   # SmitelessApp.exe profile
+            subprocess.Popen([sys.executable, "profile"], close_fds=True)   # PerAxApp.exe profile
         else:
             prof = os.path.join(os.path.dirname(os.path.abspath(__file__)), "smiteprofile.py")
             subprocess.Popen([sys.executable, prof], close_fds=True)         # pythonw smiteprofile.py

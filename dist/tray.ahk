@@ -2,21 +2,21 @@
 #SingleInstance Force
 
 ; ============================================================
-; Smiteless tray - the BUNDLED launcher (compiled to Smiteless.exe and shipped in the
-; installer). Unlike the dev smiteless.ahk (which runs `python ui\*.py`), this drives the
-; frozen app: app\SmitelessApp.exe <overlay|widget|settings|phase|update>. No Python or
+; Per-Ax tray - the BUNDLED launcher (compiled to PerAx.exe and shipped in the
+; installer). Unlike the dev perax.ahk (which runs `python ui\*.py`), this drives the
+; frozen app: app\PerAxApp.exe <overlay|widget|settings|phase|update>. No Python or
 ; AutoHotkey needs to be installed on the user's machine.
 ;
-; Install layout (A_ScriptDir = %LOCALAPPDATA%\Smiteless):
-;   Smiteless.exe            <- this
+; Install layout (A_ScriptDir = %LOCALAPPDATA%\Per-Ax):
+;   PerAx.exe            <- this
 ;   VERSION
-;   app\SmitelessApp.exe     <- the frozen Python app
-;   assets\smiteless.ico
+;   app\PerAxApp.exe     <- the frozen Python app
+;   assets\perax.ico
 ; ============================================================
 
-APP := A_ScriptDir "\app\SmitelessApp.exe"
-ICO := A_ScriptDir "\assets\smiteless.ico"
-DATADIR := EnvGet("APPDATA") "\Smiteless"                ; = core\smitepaths.py DATA_DIR
+APP := A_ScriptDir "\app\PerAxApp.exe"
+ICO := A_ScriptDir "\assets\perax.ico"
+DATADIR := EnvGet("APPDATA") "\Per-Ax"                ; = core\smitepaths.py DATA_DIR
 NOAUTO := DATADIR "\noautoopen"                          ; present = auto-open OFF
 NOHOME := DATADIR "\nohomeonstart"                       ; present = open profile/home at startup OFF
 UPDATED_MARK := A_ScriptDir "\.updated_version"
@@ -26,7 +26,7 @@ UPDATE_REPO := ""
 
 if FileExist(ICO)
     TraySetIcon(ICO)
-A_IconTip := "Smiteless"
+A_IconTip := "Per-Ax"
 
 tray := A_TrayMenu
 tray.Delete()
@@ -116,7 +116,7 @@ ShowPostUpdate() {
     try ver := Trim(FileRead(UPDATED_MARK), " `t`r`n")
     try FileDelete(UPDATED_MARK)
     if (ver != "") {
-        TrayTip("Updated to " ver, "Smiteless updated", 1)
+        TrayTip("Updated to " ver, "Per-Ax updated", 1)
     }
 }
 
@@ -149,7 +149,7 @@ CheckUpdate() {
     try {
         req := ComObject("WinHttp.WinHttpRequest.5.1")
         req.Open("GET", "https://api.github.com/repos/" UPDATE_REPO "/releases/latest", false)
-        req.SetRequestHeader("User-Agent", "Smiteless-Tray")
+        req.SetRequestHeader("User-Agent", "Per-Ax-Tray")
         req.SetRequestHeader("Accept", "application/vnd.github+json")
         req.SetTimeouts(4000, 4000, 4000, 4000)
         req.Send()
@@ -168,9 +168,9 @@ CheckUpdate() {
         newLabel := "Update to " ver
         try A_TrayMenu.Rename(g_updLabel, newLabel)
         g_updLabel := newLabel
-        A_IconTip := "Smiteless  -  update " ver " available"
-        TrayTip("Version " ver " is ready. Right-click the gold S in your tray, then '"
-            . newLabel "'.", "Smiteless update available", 1)
+        A_IconTip := "Per-Ax  -  update " ver " available"
+        TrayTip("Version " ver " is ready. Right-click the gold P in your tray, then '"
+            . newLabel "'.", "Per-Ax update available", 1)
     }
 }
 

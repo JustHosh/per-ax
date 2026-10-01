@@ -2,8 +2,8 @@
 """lolimport.py - write the op.gg runes + summoners into the League client (LCU).
 
 Shared by the champ-select panel's Import button and the AUTO-IMPORT path (imports the
-moment you lock a champion, when the toggle is on). POSTs a fresh "Smiteless ..." rune
-page (recycling an old Smiteless page / the current editable one when the page limit is
+moment you lock a champion, when the toggle is on). POSTs a fresh "Per-Ax ..." rune
+page (recycling an old Per-Ax page / the current editable one when the page limit is
 hit) and PATCHes the summoner picks, honoring the Flash-on-D/F preference.
 
 It never makes a champ-select DECISION for you: no auto-lock, no auto-ban, no ready-check
@@ -115,7 +115,7 @@ def import_build(dd, cid, role, build):
     if len(perks) < 9:
         raise RuntimeError("rune data incomplete")
     page = {
-        "name": f"Smiteless {dd['id2name'].get(cid, 'Champ')} {str(role or '').title()}",
+        "name": f"Per-Ax {dd['id2name'].get(cid, 'Champ')} {str(role or '').title()}",
         "primaryStyleId": int(build.get("primary_page_id") or 0),
         "subStyleId": int(build.get("secondary_page_id") or 0),
         "selectedPerkIds": [int(x) for x in perks[:9]],
@@ -128,7 +128,7 @@ def import_build(dd, cid, role, build):
         editable = [p for p in pages if p.get("isEditable", True)]
         target = None
         for p in editable:
-            if (p.get("name") or "").startswith("Smiteless "):
+            if (p.get("name") or "").startswith("Per-Ax "):
                 target = p
                 break
         if target is None:

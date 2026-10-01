@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""smiteconfig.py - tiny shared settings store for Smiteless.
+"""smiteconfig.py - tiny shared settings store for Per-Ax.
 
-Settings live in %APPDATA%\\Smiteless\\settings.json (smitepaths; read live by the
+Settings live in %APPDATA%\\Per-Ax\\settings.json (smitepaths; read live by the
 overlay and edited by smitesettings.py). Auto-open is a marker file (so it can be toggled
 without parsing JSON), and "start with Windows" is a registry Run key.
 """
@@ -12,9 +12,9 @@ PATH = sp.data("settings.json")
 
 
 # ---------- tie every surface's lifetime to the tray (no orphan windows on force-close) ----------
-# The tray (AHK or pystray) holds the "Global\SmitelessTray" mutex for its whole life. Each
+# The tray (AHK or pystray) holds the "Global\PerAxTray" mutex for its whole life. Each
 # surface polls it: seen-alive-then-gone => the tray was force-closed/crashed => close myself.
-_TRAY_MUTEX = "Global\\SmitelessTray"
+_TRAY_MUTEX = "Global\\PerAxTray"
 _tray_seen = [False]
 
 
@@ -41,8 +41,8 @@ def tray_gone():
 
 
 def watch_tray(root, interval=700):
-    """Tk helper: self-close `root` within ~<1s of the Smiteless tray going away, so no
-    overlay/widget is left orphaned when you force-close Smiteless. Call once after the window
+    """Tk helper: self-close `root` within ~<1s of the Per-Ax tray going away, so no
+    overlay/widget is left orphaned when you force-close Per-Ax. Call once after the window
     is built. Snappy and cheap (a single OpenMutex probe per tick)."""
     def tick():
         if tray_gone():
@@ -291,27 +291,27 @@ def set_home_on_start(on):
 
 # ---------- start with Windows (registry Run key) ----------
 _RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
-_APP = "Smiteless"
+_APP = "Per-Ax"
 
 
 def autostart_command():
     """The command Windows runs at login - the same HKCU Run value the installer writes.
-    Installed (frozen) copy: the tray exe at the install root (<root>/app/SmitelessApp.exe ->
-    <root>/Smiteless.exe). From source: the AutoHotkey tray if AHK v2 is installed, else the
+    Installed (frozen) copy: the tray exe at the install root (<root>/app/PerAxApp.exe ->
+    <root>/PerAx.exe). From source: the AutoHotkey tray if AHK v2 is installed, else the
     pure-Python tray. (It used to look for both scripts in core/, where neither lives.)"""
     if getattr(sys, "frozen", False):
         root = os.path.dirname(os.path.dirname(sys.executable))
-        return f'"{os.path.join(root, "Smiteless.exe")}"'
+        return f'"{os.path.join(root, "PerAx.exe")}"'
     repo = os.path.dirname(HERE)
     ahk = os.path.expanduser(r"~/AppData/Local/Programs/AutoHotkey/v2/AutoHotkey64.exe")
-    ahk_script = os.path.join(repo, "smiteless.ahk")
+    ahk_script = os.path.join(repo, "perax.ahk")
     if os.path.exists(ahk) and os.path.exists(ahk_script):
         return f'"{ahk}" "{ahk_script}"'
     pyw = sys.executable
     cand = os.path.join(os.path.dirname(pyw), "pythonw.exe")
     if os.path.exists(cand):
         pyw = cand
-    return f'"{pyw}" "{os.path.join(repo, "tools", "smiteless_tray.py")}"'
+    return f'"{pyw}" "{os.path.join(repo, "tools", "perax_tray.py")}"'
 
 
 def autostart_enabled():

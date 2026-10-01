@@ -1,4 +1,4 @@
-# Smiteless — adaptación LAN
+# Per-Ax — adaptación LAN
 
 Asistente de League of Legends para Windows: te acompaña en champ select, en la pantalla de
 carga y durante la partida, y entre partidas te dice qué hábito te está costando LP. Esta es
@@ -47,7 +47,7 @@ las [políticas para desarrolladores de Riot](https://developer.riotgames.com/po
 | Rastreo del jungla deduciendo su posición por el CS | Solo kill feed y timer de muerte | No inferir información oculta por la niebla |
 | Nombres de aliados leídos del chat aunque el cliente los oculte | Solo nombres que el cliente muestra | No desanonimizar jugadores |
 | Auto-updater desde el repo del autor | Apagado hasta tener releases propios | Ejecutaba código que no revisamos |
-| Datos en `~/.claude` (carpeta de Claude Code) | `%APPDATA%\Smiteless` | No mezclar con otras herramientas |
+| Datos en `~/.claude` (carpeta de Claude Code) | `%APPDATA%\Per-Ax` | No mezclar con otras herramientas |
 
 `python tools\selftest.py` incluye comprobaciones que fallan si alguna de esas funciones
 regresa (sin input simulado, sin piloto automático de champ select, jungla solo con
@@ -60,20 +60,20 @@ Requisitos: Windows 10/11, Python 3.11+ y League en modo **Sin bordes** (Borderl
 ```
 pip install -r requirements.txt
 python tools\selftest.py              # salud general: debe salir todo OK (los "skip" son opcionales)
-python smiteless_main.py settings     # ajustes
-python smiteless_main.py profile      # perfil / inicio
-python smiteless_main.py overlay      # tablero de champ select / partida
-python smiteless_main.py widget       # widget en partida
+python perax_main.py settings     # ajustes
+python perax_main.py profile      # perfil / inicio
+python perax_main.py overlay      # tablero de champ select / partida
+python perax_main.py widget       # widget en partida
 ```
 
 Para que se abra solo en champ select y en partida hace falta la bandeja (tray):
 
-- **Recomendado:** instala [AutoHotkey v2](https://www.autohotkey.com/) y abre `smiteless.ahk`
+- **Recomendado:** instala [AutoHotkey v2](https://www.autohotkey.com/) y abre `perax.ahk`
   (es el mismo tray que lleva el instalador).
-- **Sin AutoHotkey:** `pip install pystray` y `pythonw tools\smiteless_tray.py`. Es más
+- **Sin AutoHotkey:** `pip install pystray` y `pythonw tools\perax_tray.py`. Es más
   limitado: solo abre el tablero automáticamente.
 
-Para generar un instalador propio (`SmitelessSetup.exe`) ve [INSTALL.md](INSTALL.md).
+Para generar un instalador propio (`PerAxSetup.exe`) ve [INSTALL.md](INSTALL.md).
 
 ## Clave de la API de Riot
 
@@ -84,7 +84,7 @@ El scout, el rank y el historial necesitan tu clave de
 2. Un archivo `.env` en la raíz del repo (solo al correr desde el código; está en
    `.gitignore`). Copia `.env.example` a `.env` y pon tu clave.
 3. Lo que pegues en **Ajustes → RIOT API KEY** (se guarda en
-   `%APPDATA%\Smiteless\riot_api_key.txt`).
+   `%APPDATA%\Per-Ax\riot_api_key.txt`).
 
 Nunca la pongas en un archivo versionado. La clave de desarrollo caduca cada 24 horas y tiene
 límites bajos: alcanza para uso personal. Para distribuir la app hay que registrarla en Riot y
@@ -109,7 +109,7 @@ python core\lolrecommend.py Ahri mid --vs Zed --enemies "Zed,Lee Sin,Jinx,Thresh
 - Respeta los límites que Riot manda en sus headers; con una clave de desarrollo son unas
   1,300 partidas por hora como máximo. Si la clave caduca, se detiene: pega una nueva y vuelve
   a correr el mismo comando (continúa donde se quedó; `Ctrl+C` también es seguro).
-- Todo va a `%APPDATA%\Smiteless\matches.sqlite`. `purge --keep-patches 3` borra parches
+- Todo va a `%APPDATA%\Per-Ax\matches.sqlite`. `purge --keep-patches 3` borra parches
   viejos.
 
 El recomendador (fase 1) usa winrates condicionales con suavizado bayesiano: campeón + rol +
@@ -120,7 +120,7 @@ de objetos lo dice: *"▸ Shadowflame → Rabadon · 56% in 412 games vs AP comp
 
 ## Dónde guarda cosas
 
-Todo vive en `%APPDATA%\Smiteless`: `settings.json`, tu historial (behavior ledger y LP),
+Todo vive en `%APPDATA%\Per-Ax`: `settings.json`, tu historial (behavior ledger y LP),
 `logs\` y `cache\` (se puede borrar; se vuelve a descargar).
 
 ## Actualizaciones

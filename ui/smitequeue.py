@@ -48,7 +48,7 @@ _k32 = ctypes.windll.kernel32
 
 
 def _single_instance():
-    _k32.CreateMutexW(None, False, "Global\\SmitelessQueue")
+    _k32.CreateMutexW(None, False, "Global\\PerAxQueue")
     return _k32.GetLastError() != 183            # ERROR_ALREADY_EXISTS
 
 
@@ -110,7 +110,7 @@ def main():
     hdr.pack(fill="x", padx=12, pady=(8, 2))
     tk.Label(hdr, text=skin.BRAND_MARK, bg=SURFACE, fg=EMBER,
              font=skin.display(skin.SMALL, bold=True)).pack(side="left")
-    tk.Label(hdr, text=" SMITELESS", bg=SURFACE, fg=TXT,
+    tk.Label(hdr, text=" PER-AX", bg=SURFACE, fg=TXT,
              font=skin.display(skin.SMALL, bold=True)).pack(side="left")
     tk.Label(hdr, text=" QUEUE CALL", bg=SURFACE, fg=MUTED,
              font=skin.display(skin.SMALL)).pack(side="left")

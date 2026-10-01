@@ -27,7 +27,7 @@ _user32 = ctypes.windll.user32
 
 
 def _single_instance():
-    _kernel32.CreateMutexW(None, False, "Global\\SmitelessProfile")
+    _kernel32.CreateMutexW(None, False, "Global\\PerAxProfile")
     return _kernel32.GetLastError() != 183     # ERROR_ALREADY_EXISTS
 
 
@@ -64,7 +64,7 @@ def main():
 
     root = tk.Tk()
     cfg.watch_tray(root)                        # close with the tray (no orphan profile window)
-    root.title("Smiteless — Profile")
+    root.title("Per-Ax — Profile")
     root.configure(bg=skin.VOID)
     skin.dark_titlebar(root)
     try:
@@ -72,16 +72,16 @@ def main():
         if getattr(sys, "frozen", False):
             exe_dir = os.path.dirname(sys.executable)
             cand.extend([
-                os.path.join(exe_dir, "assets", "smiteless.ico"),
-                os.path.join(exe_dir, "smiteless.ico"),
+                os.path.join(exe_dir, "assets", "perax.ico"),
+                os.path.join(exe_dir, "perax.ico"),
             ])
         cand.extend([
-            os.path.join(_ROOT, "assets", "smiteless.ico"),
-            os.path.join(os.path.dirname(os.path.abspath(__file__)), "smiteless.ico"),
+            os.path.join(_ROOT, "assets", "perax.ico"),
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), "perax.ico"),
         ])
         ico = next((p for p in cand if os.path.exists(p)), "")
         if ico:
-            # Use both APIs so Windows titlebar/taskbar consistently get the same "S" icon.
+            # Use both APIs so Windows titlebar/taskbar consistently get the same app icon.
             root.iconbitmap(ico)
             root._app_icon = ImageTk.PhotoImage(Image.open(ico))
             root.iconphoto(True, root._app_icon)
@@ -143,7 +143,7 @@ def main():
         try:
             import time as _t
             pil = sc.render_profile(dd, prof)          # collapsed, shareable snapshot
-            name = f"smiteless_{(prof.get('riot_id') or 'profile').split('#')[0]}_{_t.strftime('%Y%m%d')}.png"
+            name = f"perax_{(prof.get('riot_id') or 'profile').split('#')[0]}_{_t.strftime('%Y%m%d')}.png"
             name = "".join(c if (c.isalnum() or c in "._-") else "_" for c in name)
             dest = os.path.join(os.path.expanduser("~"), "Desktop", name)
             pil.save(dest)
@@ -211,7 +211,7 @@ def main():
                        "ARAM/Arena don't show here. If that seems wrong, your Riot key may "
                        "have expired (Settings → Riot API Key).")
             else:
-                msg = ("couldn't tell who you are yet — open the League client once (Smiteless "
+                msg = ("couldn't tell who you are yet — open the League client once (Per-Ax "
                        "remembers you after that, so the profile works with the client closed) "
                        "and check the Riot key in Settings.")
             canvas.create_text(sc.PW // 2, 70, text=msg, fill=skin.MUTED, font=skin.body(12), width=sc.PW - 100)
@@ -374,7 +374,7 @@ def main():
         kind = game.get("review_kind", "improve")
         head = "What you did well" if kind == "positive" else "3 things to improve"
         win = tk.Toplevel(root)
-        win.title("Smiteless — Full review")
+        win.title("Per-Ax — Full review")
         win.configure(bg=skin.VOID)
         skin.dark_titlebar(win)
         win.minsize(560, 360)
@@ -428,7 +428,7 @@ def main():
                 return
 
     def _player_menu(event, riot_id, puuid):
-        """Right-click a player -> look them up anywhere / open their Smiteless profile / copy."""
+        """Right-click a player -> look them up anywhere / open their Per-Ax profile / copy."""
         import webbrowser
         m = tk.Menu(root, tearoff=0, bg=skin.SURFACE, fg=skin.TXT, activebackground=skin.HOVER,
                     activeforeground=skin.TXT, bd=0, font=skin.body(skin.SMALL))
@@ -437,7 +437,7 @@ def main():
         m.add_separator()
         me = (st["prof"] or {}).get("puuid")
         if puuid and puuid != me:
-            m.add_command(label="View on Smiteless",
+            m.add_command(label="View on Per-Ax",
                           command=lambda: _open_view(riot_id=(riot_id or None), puuid=puuid))
             m.add_separator()
         for label, url in sc.site_urls(riot_id):

@@ -1,9 +1,9 @@
-# Cut a new Smiteless release on THIS repo (gh resolves it from the `origin` remote). Installed
+# Cut a new Per-Ax release on THIS repo (gh resolves it from the `origin` remote). Installed
 # copies only see it if tools\smiteupdate.py REPO and dist\tray.ahk UPDATE_REPO name this repo.
 #
 #   powershell -ExecutionPolicy Bypass -File dist\make-release.ps1 -Version 1.1.0 [-Notes "what changed"]
 #
-# It bumps VERSION, builds SmitelessSetup.exe, commits, tags, and publishes a GitHub Release
+# It bumps VERSION, builds PerAxSetup.exe, commits, tags, and publishes a GitHub Release
 # with the installer attached. The installed app checks that release and offers the update.
 param(
     [Parameter(Mandatory = $true)][string]$Version,
@@ -19,8 +19,8 @@ Write-Host "==> set VERSION = $ver" -ForegroundColor Cyan
 
 Write-Host "==> build" -ForegroundColor Cyan
 & (Join-Path $PSScriptRoot "build.ps1") -Python $Python
-$setup = Join-Path $repo "build\SmitelessSetup.exe"
-if (-not (Test-Path $setup)) { throw "build did not produce SmitelessSetup.exe" }
+$setup = Join-Path $repo "build\PerAxSetup.exe"
+if (-not (Test-Path $setup)) { throw "build did not produce PerAxSetup.exe" }
 
 Write-Host "==> commit + push VERSION" -ForegroundColor Cyan
 git -C $repo add VERSION
@@ -28,7 +28,7 @@ git -C $repo commit -m "Release v$ver"
 git -C $repo push origin main
 
 Write-Host "==> publish GitHub release v$ver" -ForegroundColor Cyan
-if (-not $Notes) { $Notes = "Smiteless v$ver" }
+if (-not $Notes) { $Notes = "Per-Ax v$ver" }
 # gh may not be logged in (a fresh shell, a cloud session, a rotated host). The push above
 # already proved git HAS a working github.com credential, so borrow it rather than failing
 # at the last step - a build that ships everything except the release the updater reads is
@@ -47,7 +47,7 @@ if (-not $env:GH_TOKEN -and -not $env:GITHUB_TOKEN) {
         }
     } finally { try { [IO.File]::Delete($tmp) } catch {} }
 }
-gh release create "v$ver" $setup --title "Smiteless v$ver" --notes $Notes
-if ($LASTEXITCODE -ne 0) { throw "gh release create failed - v$ver is pushed but NOT published, so the in-app updater will not offer it. Fix auth and re-run: gh release create v$ver `"$setup`" --title `"Smiteless v$ver`" --notes `"$Notes`"" }
+gh release create "v$ver" $setup --title "Per-Ax v$ver" --notes $Notes
+if ($LASTEXITCODE -ne 0) { throw "gh release create failed - v$ver is pushed but NOT published, so the in-app updater will not offer it. Fix auth and re-run: gh release create v$ver `"$setup`" --title `"Per-Ax v$ver`" --notes `"$Notes`"" }
 
 Write-Host "`nReleased v$ver. Installed copies will offer the update on next launch." -ForegroundColor Green

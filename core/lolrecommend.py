@@ -36,7 +36,7 @@ from collections import namedtuple
 
 import smitepaths as sp
 
-DB_PATH = os.environ.get("SMITELESS_MATCH_DB") or sp.data("matches.sqlite")
+DB_PATH = os.environ.get("PERAX_MATCH_DB") or sp.data("matches.sqlite")
 
 M_PRIOR = 25.0            # pseudo-games of the broader estimate every level starts from
 MIN_SLOT_GAMES = 150      # champ + role + slot sample below which the recommender stays silent

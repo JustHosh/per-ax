@@ -370,7 +370,7 @@ def _make_click_through(hwnd):
 
 def _single_instance():
     k = ctypes.WinDLL("kernel32", use_last_error=True)
-    k.CreateMutexW(None, False, "Global\\SmitelessDead")
+    k.CreateMutexW(None, False, "Global\\PerAxDead")
     return ctypes.get_last_error() != 183          # ERROR_ALREADY_EXISTS
 
 

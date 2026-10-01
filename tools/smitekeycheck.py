@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """smitekeycheck.py - on-launch Riot key freshness check.
 
-Free dev keys die every 24h. The tray runs `SmitelessApp.exe keycheck` shortly after
+Free dev keys die every 24h. The tray runs `PerAxApp.exe keycheck` shortly after
 startup: if a key file EXISTS but Riot now rejects it (401/403 on the status host - a
 definitive verdict, not a network blip), a small prompt opens to paste a fresh one.
 No key at all = the user never set the scout up -> stay silent (it's optional). A key that
@@ -28,7 +28,7 @@ GREEN = "#5fc47a"; RED = "#d46d78"; ENTRY = "#0d0f16"; BTN = "#262b3b"; BTN_A = 
 def prompt(old_key):
     import tkinter as tk
     root = tk.Tk()
-    root.title("Smiteless — Riot key expired")
+    root.title("Per-Ax — Riot key expired")
     root.configure(bg=BG)
     root.resizable(False, False)
     try:

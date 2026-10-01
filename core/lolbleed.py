@@ -9,7 +9,7 @@ the biggest one with NO in-game surface: 23 of 46 graded games carry it, won at 
 the 90 seconds AFTER a death; the minutes BEFORE the first one were empty.
 
 WHY A HEALTH BAR
-Nothing else in Smiteless reads `activePlayer.championStats` - your own current health is
+Nothing else in Per-Ax reads `activePlayer.championStats` - your own current health is
 in every single :2999 poll and was going straight in the bin. That number is the one fact
 that decides whether the next thirty seconds is a death, and it is the one thing you stop
 looking at when you are last-hitting. Low HP alone is not a warning (you'd get one every

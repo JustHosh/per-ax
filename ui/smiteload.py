@@ -440,7 +440,7 @@ def render_frame(dd, b, W, H):
         d.text((gx0, hy + S(2)), "✦", font=ImageFont.truetype("seguisym.ttf", S(18)), fill=C_EMBER)
     except Exception:
         pass
-    d.text((gx0 + S(28), hy), "SMITELESS", font=_dfont(S(22)), fill=C_EMBER)
+    d.text((gx0 + S(28), hy), "PER-AX", font=_dfont(S(22)), fill=C_EMBER)
     d.text((gx0 + S(178), hy + S(5)), "LOADING SCOUT", font=_dfont(S(15)), fill=C_MUTED)
     call = _carry_call(allies) if scouted else None
     if call:
@@ -494,7 +494,7 @@ def render_frame(dd, b, W, H):
 
 def _single_instance():
     k = ctypes.WinDLL("kernel32", use_last_error=True)
-    k.CreateMutexW(None, False, "Global\\SmitelessLoad")
+    k.CreateMutexW(None, False, "Global\\PerAxLoad")
     return ctypes.get_last_error() != 183
 
 

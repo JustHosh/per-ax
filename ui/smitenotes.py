@@ -7,7 +7,7 @@ release repo is configured (smiteupdate.REPO), tries to pull the latest CHANGELO
 in the background so you can see notes for a release you haven't installed yet. Opened from
 the tray ("Patch notes") or:
 
-    SmitelessApp.exe notes      (frozen)   /   python ui/smitenotes.py   (dev)
+    PerAxApp.exe notes      (frozen)   /   python ui/smitenotes.py   (dev)
 """
 import sys
 import os
@@ -36,7 +36,7 @@ _k32 = ctypes.windll.kernel32
 
 
 def _single_instance():
-    _k32.CreateMutexW(None, False, "Global\\SmitelessNotes")
+    _k32.CreateMutexW(None, False, "Global\\PerAxNotes")
     return _k32.GetLastError() != 183           # ERROR_ALREADY_EXISTS
 
 
@@ -57,7 +57,7 @@ def _local_changelog():
                     return t
         except Exception:
             continue
-    return "# Smiteless — Patch Notes\n\n(no patch notes found)"
+    return "# Per-Ax — Patch Notes\n\n(no patch notes found)"
 
 
 def _raw_url():
@@ -75,7 +75,7 @@ def _fetch_remote():
     if not url:
         return None
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "Smiteless-Notes"})
+        req = urllib.request.Request(url, headers={"User-Agent": "Per-Ax-Notes"})
         with urllib.request.urlopen(req, timeout=6, context=ssl.create_default_context()) as r:
             return r.read().decode("utf-8")
     except Exception:
@@ -88,13 +88,13 @@ def main():
     import tkinter as tk
 
     root = tk.Tk()
-    root.title("Smiteless — Patch Notes")
+    root.title("Per-Ax — Patch Notes")
     root.configure(bg=VOID)
     skin.dark_titlebar(root)
     root.geometry("560x680")
     try:
-        for ico in (os.path.join(_R, "assets", "smiteless.ico"),
-                    os.path.join(_install_root(), "assets", "smiteless.ico")):
+        for ico in (os.path.join(_R, "assets", "perax.ico"),
+                    os.path.join(_install_root(), "assets", "perax.ico")):
             if os.path.exists(ico):
                 root.iconbitmap(ico)
                 break

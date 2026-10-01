@@ -1,9 +1,9 @@
-# Builds SmitelessSetup.exe (the self-contained installer) from source.
+# Builds PerAxSetup.exe (the self-contained installer) from source.
 #
 #   powershell -ExecutionPolicy Bypass -File dist\build.ps1 [-Python <python.exe>]
 #
 # Needs (on the BUILD machine only - not the user's): Python with PyInstaller
-# (`pip install pyinstaller`), and AutoHotkey v2 + Ahk2Exe. Output: build\SmitelessSetup.exe
+# (`pip install pyinstaller`), and AutoHotkey v2 + Ahk2Exe. Output: build\PerAxSetup.exe
 param(
     [string]$Python = "python"
 )
@@ -11,7 +11,7 @@ $ErrorActionPreference = "Stop"
 $repo  = Split-Path $PSScriptRoot -Parent
 $build = Join-Path $repo "build"
 $stage = Join-Path $build "stage"
-$ico   = Join-Path $repo "assets\smiteless.ico"
+$ico   = Join-Path $repo "assets\perax.ico"
 
 $ahk = "$env:LOCALAPPDATA\Programs\AutoHotkey\v2\AutoHotkey64.exe"
 if (-not (Test-Path $ahk)) { $ahk = "C:\Program Files\AutoHotkey\v2\AutoHotkey64.exe" }
@@ -44,21 +44,21 @@ $hidden = @("smiteoverlay","smitewidget","smitedead","smiteload","smitequeue","s
             # the very feature it is named for.
             "loldraft","lolimport","loltempo","smiteskin","smitenotes",
             "winsound","wave","PIL._tkinter_finder")
-$pyiArgs = @("--noconfirm","--onedir","--windowed","--name","SmitelessApp","--icon",$ico,
+$pyiArgs = @("--noconfirm","--onedir","--windowed","--name","PerAxApp","--icon",$ico,
              "--paths",(Join-Path $repo "core"),"--paths",(Join-Path $repo "ui"),"--paths",(Join-Path $repo "tools"),
              "--distpath",(Join-Path $build "pyi"),"--workpath",(Join-Path $build "pyiwork"),"--specpath",$build)
 foreach ($h in $hidden) { $pyiArgs += @("--hidden-import",$h) }
-$pyiArgs += (Join-Path $repo "smiteless_main.py")
+$pyiArgs += (Join-Path $repo "perax_main.py")
 & $Python -m PyInstaller @pyiArgs
 if ($LASTEXITCODE -ne 0) { throw "PyInstaller failed" }
 
-Write-Host "==> compile tray -> Smiteless.exe" -ForegroundColor Cyan
-Invoke-Ahk2Exe (Join-Path $repo "dist\tray.ahk") (Join-Path $stage "Smiteless.exe")
+Write-Host "==> compile tray -> PerAx.exe" -ForegroundColor Cyan
+Invoke-Ahk2Exe (Join-Path $repo "dist\tray.ahk") (Join-Path $stage "PerAx.exe")
 
 Write-Host "==> assemble install tree" -ForegroundColor Cyan
-Copy-Item (Join-Path $build "pyi\SmitelessApp") (Join-Path $stage "app") -Recurse
+Copy-Item (Join-Path $build "pyi\PerAxApp") (Join-Path $stage "app") -Recurse
 New-Item -ItemType Directory -Force (Join-Path $stage "assets") | Out-Null
-Copy-Item $ico (Join-Path $stage "assets\smiteless.ico")
+Copy-Item $ico (Join-Path $stage "assets\perax.ico")
 Copy-Item (Join-Path $repo "VERSION") (Join-Path $stage "VERSION")
 Copy-Item (Join-Path $repo "CHANGELOG.md") (Join-Path $stage "CHANGELOG.md")   # Patch notes window reads this
 
@@ -66,9 +66,9 @@ Write-Host "==> zip payload" -ForegroundColor Cyan
 $payload = Join-Path $repo "dist\payload.zip"   # next to installer.ahk for FileInstall
 Compress-Archive -Path (Join-Path $stage "*") -DestinationPath $payload -Force
 
-Write-Host "==> compile installer -> SmitelessSetup.exe" -ForegroundColor Cyan
-Invoke-Ahk2Exe (Join-Path $repo "dist\installer.ahk") (Join-Path $build "SmitelessSetup.exe")
+Write-Host "==> compile installer -> PerAxSetup.exe" -ForegroundColor Cyan
+Invoke-Ahk2Exe (Join-Path $repo "dist\installer.ahk") (Join-Path $build "PerAxSetup.exe")
 Remove-Item $payload -Force -ErrorAction SilentlyContinue
 
-$size = "{0:N1}" -f ((Get-Item (Join-Path $build "SmitelessSetup.exe")).Length / 1MB)
-Write-Host "`nDONE -> $build\SmitelessSetup.exe ($size MB)" -ForegroundColor Green
+$size = "{0:N1}" -f ((Get-Item (Join-Path $build "PerAxSetup.exe")).Length / 1MB)
+Write-Host "`nDONE -> $build\PerAxSetup.exe ($size MB)" -ForegroundColor Green

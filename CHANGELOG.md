@@ -1,4 +1,4 @@
-# Smiteless (adaptación LAN) — Notas de versión
+# Per-Ax (adaptación LAN) — Notas de versión
 
 ## Sin publicar — base propia para LAN
 
@@ -20,7 +20,7 @@ Primera versión de nuestro fork, basado en Smiteless v0.9.72 de bobbyroylee (li
 - Deducir dónde está el jungla enemigo a partir de su CS.
 
 **Por dentro**
-- Todo se guarda en %APPDATA%\Smiteless (antes dentro de ~/.claude, la carpeta de Claude Code).
+- Todo se guarda en %APPDATA%\Per-Ax (antes dentro de ~/.claude, la carpeta de Claude Code).
 - Clave de Riot: variable de entorno RIOT_API_KEY, un .env ignorado por git, o Ajustes.
 - Actualizaciones automáticas apagadas hasta tener releases propios: ya no se descarga nada del repo original.
 - Sin "Usage stats" ni enlaces al GitHub o al Firebase del autor original.

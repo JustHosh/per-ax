@@ -1,6 +1,6 @@
 # DraftBoard — the Live Draft Link 🔗
 
-In champ select, Smiteless posts **one short URL into the lobby chat** (and opens it for
+In champ select, Per-Ax posts **one short URL into the lobby chat** (and opens it for
 you too). Anyone who clicks it — including the four random teammates who will never install
 anything — lands on **DraftBoard**, a live web board of the current draft: both teams,
 bans, and per-seat **champion suggestions with runes** for this exact game. They tap
@@ -9,12 +9,12 @@ evolves. No app, no account, no refresh.
 
 **Total monthly cost: $0.** The page is static hosting (GitHub Pages), the live data
 channel is Firebase's free Spark tier, and all art/names load from Riot's public ddragon
-CDN in the viewer's browser. Smiteless only uploads a few KB of champion/rune IDs per
+CDN in the viewer's browser. Per-Ax only uploads a few KB of champion/rune IDs per
 champ select.
 
 ```
-you (Smiteless) ──publishes draft──▶ Firebase RTDB (free) ──streams──▶ teammates' browsers
-        └──posts ONE short link in chat + opens it for you──▶ …github.io/smiteless/draft/#d=…
+you (Per-Ax) ──publishes draft──▶ Firebase RTDB (free) ──streams──▶ teammates' browsers
+        └──posts ONE short link in chat + opens it for you──▶ …github.io/perax/draft/#d=…
 ```
 
 Out of the box every link carries `&db=<host>`, so the page knows which database to stream
@@ -33,13 +33,13 @@ the whole feature off with the "Live draft link" toggle if you don't want to sha
 
 ## One-time setup (~5 minutes)
 
-The feature stays dormant until you give Smiteless BOTH a database to publish to and the URL
+The feature stays dormant until you give Per-Ax BOTH a database to publish to and the URL
 of your own hosted copy of the page.
 
 ### 1. Create a free Firebase Realtime Database
 
 1. Go to [console.firebase.google.com](https://console.firebase.google.com) → **Create a
-   project** (any name, e.g. `smiteless-draft`). Analytics off is fine.
+   project** (any name, e.g. `perax-draft`). Analytics off is fine.
 2. In the left menu: **Build → Realtime Database → Create Database**. Pick the US region,
    start in **locked mode**.
 3. Open the **Rules** tab and replace the rules with:
@@ -63,7 +63,7 @@ of your own hosted copy of the page.
    price of running with zero servers and zero logins. Don't store anything else in this
    database.
 4. Copy the database URL shown above the data tree — it looks like
-   `https://smiteless-draft-default-rtdb.firebaseio.com`.
+   `https://perax-draft-default-rtdb.firebaseio.com`.
 
 ### 2. Host the page
 
@@ -71,7 +71,7 @@ The page itself is [`docs/draft/index.html`](draft/index.html), served by GitHub
 YOUR repo: **Settings → Pages → Deploy from a branch → `main` / `docs`**. Its URL is
 `https://<user>.github.io/<repo>/draft/`.
 
-### 3. Paste both into Smiteless
+### 3. Paste both into Per-Ax
 
 Tray → **Settings** → **LIVE DRAFT LINK** → paste the **Database URL** and the **Page URL** →
 **Save + test**. The test publishes a fake draft and opens the resulting page in your browser

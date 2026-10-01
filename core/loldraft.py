@@ -502,7 +502,7 @@ def _worker(dd):
             time.sleep(PUBLISH_POLL)
         # champ select ended (not a dodge/stop) -> mirror the loading + in-game scoreboard
         if db and _ST["draft_id"] and not _ST["stop"]:
-            # Started mid-game (Smiteless launched after champ select — nothing was published,
+            # Started mid-game (Per-Ax launched after champ select — nothing was published,
             # so there's no base doc and no chat link). Seed a minimal doc so the page recognizes
             # the draft, and open the board for the user directly since there's no chat to post to.
             if not _ST["last_pub"] and phasecheck.phase() in _GAME_PHASES:

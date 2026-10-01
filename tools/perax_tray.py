@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""smiteless_tray.py - the persistent Smiteless tray app, pure Python (replaces the AHK).
+"""perax_tray.py - the persistent Per-Ax tray app, pure Python (replaces the AHK).
 
 A system-tray icon + right-click menu (Open overlay / Settings / Auto-open / Start with
 Windows / Quit), a global Ctrl+Alt+X hotkey (native Win32 RegisterHotKey), and the
@@ -22,7 +22,7 @@ _pyw = os.path.join(os.path.dirname(sys.executable), "pythonw.exe")
 PYW = _pyw if os.path.exists(_pyw) else sys.executable        # windowless launcher
 OVERLAY = os.path.join(_ROOT, "ui", "smiteoverlay.py")
 SETTINGS = os.path.join(_ROOT, "ui", "smitesettings.py")
-ICON = os.path.join(_ROOT, "assets", "smiteless.ico")
+ICON = os.path.join(_ROOT, "assets", "perax.ico")
 CREATE_NO_WINDOW = 0x08000000
 
 _k32 = ctypes.windll.kernel32
@@ -34,7 +34,7 @@ def _single_instance():
     # use_last_error so GetLastError is read reliably (a plain ctypes call can clobber it,
     # which let duplicate instances start)
     k = ctypes.WinDLL("kernel32", use_last_error=True)
-    k.CreateMutexW(None, False, "Global\\SmitelessTray")
+    k.CreateMutexW(None, False, "Global\\PerAxTray")
     return ctypes.get_last_error() != 183        # ERROR_ALREADY_EXISTS
 
 
@@ -125,7 +125,7 @@ def main():
             names = []
         if not names:
             return [pystray.MenuItem("Set up in Settings…", lambda icon, item: open_settings())]
-        main_py = os.path.join(_ROOT, "smiteless_main.py")
+        main_py = os.path.join(_ROOT, "perax_main.py")
         return [pystray.MenuItem(n, (lambda nm: lambda icon, item: _launch(main_py, "login", nm))(n))
                 for n in names]
 
@@ -141,7 +141,7 @@ def main():
         pystray.Menu.SEPARATOR,
         pystray.MenuItem("Quit", quit_app),
     )
-    icon = pystray.Icon("smiteless", img, "Smiteless", menu)
+    icon = pystray.Icon("perax", img, "Per-Ax", menu)
     icon.run()
     _stop.set()
 

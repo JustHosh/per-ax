@@ -2,7 +2,7 @@
 """phasecheck.py - prints the current League gameflow phase and exits fast.
 
 Minimal stdlib only (no PIL/op.gg imports) so the AHK watcher can poll it cheaply
-to decide when to auto-open Smiteless. Prints one of: Lobby, Matchmaking,
+to decide when to auto-open Per-Ax. Prints one of: Lobby, Matchmaking,
 ChampSelect, GameStart, InProgress, Reconnect, WaitingForStats, PreEndOfGame,
 EndOfGame, None, or "" (client not running).
 """
