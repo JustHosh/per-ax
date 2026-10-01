@@ -10,12 +10,16 @@
 ;   SmitelessSetup.exe /upgrade     silent reinstall over the existing copy (used by the updater)
 ;   SmitelessSetup.exe /uninstall   remove Smiteless
 ;
-; Installs to %LOCALAPPDATA%\Smiteless and makes Desktop + Start Menu + Startup shortcuts.
+; Installs to %LOCALAPPDATA%\Smiteless and makes Desktop + Start Menu shortcuts. "Start with
+; Windows" is a checkbox (the HKCU Run value Settings -> Startup also toggles); a silent
+; /upgrade leaves that choice exactly as it was.
 ; ============================================================
 
 APPNAME := "Smiteless"
+PUBLISHER := "JustHosh"
 TARGET := EnvGet("LOCALAPPDATA") "\" APPNAME
 REGKEY := "HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\" APPNAME
+RUNKEY := "HKCU\Software\Microsoft\Windows\CurrentVersion\Run"   ; = smiteconfig._RUN_KEY
 
 mode := "gui"
 for a in A_Args {
@@ -43,8 +47,9 @@ g.Add("Text", , "Smiteless")
 g.SetFont("s10 cWhite")
 g.Add("Text", "y+8 w430", "A League of Legends champ-select and in-game overlay.")
 g.Add("Text", "y+12 w430 c0x9B988E",
-    "This installs everything it needs (nothing else to download) into your account folder, "
-    . "adds a desktop shortcut, and starts it with Windows. Run League in Borderless mode.")
+    "This installs everything it needs (nothing else to download) into your account folder "
+    . "and adds a desktop shortcut. Run League in Borderless mode.")
+startWin := g.Add("Checkbox", "y+10 w430 Checked", "Start with Windows (needed for it to open by itself at champ select)")
 g.SetFont("s9 c0x9B988E")
 g.Add("Text", "y+12 w430", "Installs to:  " TARGET)
 btn := g.Add("Button", "y+18 w120 h34 Default", "Install")
@@ -57,11 +62,14 @@ g.OnEvent("Close", (*) => ExitApp())
 g.Show()
 
 GuiInstall(*) {
-    global g, btn, cancel, status, TARGET
+    global g, btn, cancel, status, TARGET, startWin
     btn.Enabled := false, cancel.Enabled := false
     status.Value := "Installing..."
-    DoInstall(true, false)
-    status.Value := "Done!  Smiteless is starting and will run with Windows from now on."
+    DoInstall(true, false, startWin.Value ? 1 : 0)
+    if startWin.Value
+        status.Value := "Done!  Smiteless is starting and will run with Windows."
+    else
+        status.Value := "Done!  Smiteless is starting (it will not start with Windows)."
     btn.Text := "Finish", btn.Enabled := true
     btn.OnEvent("Click", (*) => ExitApp())
     MsgBox("Smiteless is installed and running.`n`nLook for the gold 'S' icon near your clock "
@@ -70,8 +78,9 @@ GuiInstall(*) {
     ExitApp()
 }
 
-DoInstall(launch, upgraded := false) {
-    global TARGET, REGKEY, APPNAME
+; startup: 1 = start with Windows, 0 = don't, -1 = leave the current choice alone (upgrade)
+DoInstall(launch, upgraded := false, startup := -1) {
+    global TARGET, REGKEY, APPNAME, PUBLISHER, RUNKEY
     ; stop any running copy so files aren't locked
     RunWait(A_ComSpec ' /c taskkill /F /IM Smiteless.exe /IM SmitelessApp.exe >nul 2>nul', , "Hide")
     Sleep(400)
@@ -87,11 +96,17 @@ DoInstall(launch, upgraded := false) {
     try FileDelete(tmp)
     ; keep a copy of this installer for clean uninstall
     try FileCopy(A_ScriptFullPath, TARGET "\Uninstall.exe", 1)
-    ; shortcuts (Desktop, Startup, Start Menu)
+    ; shortcuts (Desktop, Start Menu). Autostart is the HKCU Run value, never a Startup-folder
+    ; shortcut: one mechanism, the same one Settings -> "Start with Windows" toggles.
     ico := TARGET "\assets\smiteless.ico"
     exe := TARGET "\Smiteless.exe"
     FileCreateShortcut(exe, A_Desktop "\Smiteless.lnk", TARGET, , APPNAME, ico)
-    FileCreateShortcut(exe, A_Startup "\Smiteless.lnk", TARGET, , APPNAME, ico)
+    hadLegacy := FileExist(A_Startup "\Smiteless.lnk")   ; older installs used a Startup shortcut:
+    try FileDelete(A_Startup "\Smiteless.lnk")          ;   an upgrade turns it into the Run value
+    if (startup = 1 || (startup = -1 && hadLegacy))
+        RegWrite('"' exe '"', "REG_SZ", RUNKEY, APPNAME)
+    else if (startup = 0)
+        try RegDelete(RUNKEY, APPNAME)
     DirCreate(A_Programs "\" APPNAME)
     FileCreateShortcut(exe, A_Programs "\" APPNAME "\Smiteless.lnk", TARGET, , APPNAME, ico)
     FileCreateShortcut(TARGET "\Uninstall.exe", A_Programs "\" APPNAME "\Uninstall Smiteless.lnk",
@@ -107,7 +122,7 @@ DoInstall(launch, upgraded := false) {
     RegWrite('"' TARGET '\Uninstall.exe" /uninstall', "REG_SZ", REGKEY, "UninstallString")
     RegWrite(ico, "REG_SZ", REGKEY, "DisplayIcon")
     RegWrite(ver, "REG_SZ", REGKEY, "DisplayVersion")
-    RegWrite("bobbyroylee", "REG_SZ", REGKEY, "Publisher")
+    RegWrite(PUBLISHER, "REG_SZ", REGKEY, "Publisher")
     RegWrite(TARGET, "REG_SZ", REGKEY, "InstallLocation")
     RegWrite(1, "REG_DWORD", REGKEY, "NoModify")
     RegWrite(1, "REG_DWORD", REGKEY, "NoRepair")
@@ -127,11 +142,12 @@ DoInstall(launch, upgraded := false) {
 }
 
 Uninstall() {
-    global TARGET, REGKEY, APPNAME
+    global TARGET, REGKEY, APPNAME, RUNKEY
     RunWait(A_ComSpec ' /c taskkill /F /IM Smiteless.exe /IM SmitelessApp.exe >nul 2>nul', , "Hide")
     Sleep(400)
     try FileDelete(A_Desktop "\Smiteless.lnk")
     try FileDelete(A_Startup "\Smiteless.lnk")
+    try RegDelete(RUNKEY, APPNAME)
     try DirDelete(A_Programs "\" APPNAME, true)
     try RegDeleteKey(REGKEY)
     ; remove the install folder. Uninstall.exe runs from INSIDE it, so a detached batch

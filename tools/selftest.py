@@ -95,7 +95,7 @@ def c_region():
 def c_claude():
     import claudecli as cc
     exe = cc.find_claude()
-    return (OK, os.path.basename(exe)) if exe else (FAIL, "claude CLI not found -> matchup tips disabled")
+    return (OK, os.path.basename(exe)) if exe else (SKIP, "claude CLI not found -> AI matchup-tip fallback off")
 
 
 def c_glyphs():

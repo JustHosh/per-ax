@@ -340,7 +340,8 @@ def main():
                 msg = limp.import_build(dd, cid, role, build)
                 root.after(0, lambda: status.config(text=msg, fg=skin.GOOD))
             except Exception as e:
-                root.after(0, lambda: status.config(text=f"import failed: {e}", fg=skin.BAD))
+                msg = f"import failed: {e}"
+                root.after(0, lambda: status.config(text=msg, fg=skin.BAD))
 
         threading.Thread(target=work, daemon=True).start()
 
@@ -356,7 +357,8 @@ def main():
                 nm = dd["id2name"].get(cid, "champ")
                 root.after(0, lambda: status.config(text=f"hovered {nm}", fg=skin.GOOD))
             except Exception as e:
-                root.after(0, lambda: status.config(text=f"hover failed: {e}", fg=skin.BAD))
+                msg = f"hover failed: {e}"
+                root.after(0, lambda: status.config(text=msg, fg=skin.BAD))
         threading.Thread(target=work, daemon=True).start()
 
     skin.button(bar, "Get key ↗", open_dev_site, size=skin.SMALL).pack(side="left", padx=2, pady=4)

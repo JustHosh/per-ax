@@ -295,17 +295,23 @@ _APP = "Smiteless"
 
 
 def autostart_command():
-    """The command Windows runs at login. Prefer the AutoHotkey tray (the reliable shell);
-    fall back to the pure-Python tray if AutoHotkey isn't installed."""
+    """The command Windows runs at login - the same HKCU Run value the installer writes.
+    Installed (frozen) copy: the tray exe at the install root (<root>/app/SmitelessApp.exe ->
+    <root>/Smiteless.exe). From source: the AutoHotkey tray if AHK v2 is installed, else the
+    pure-Python tray. (It used to look for both scripts in core/, where neither lives.)"""
+    if getattr(sys, "frozen", False):
+        root = os.path.dirname(os.path.dirname(sys.executable))
+        return f'"{os.path.join(root, "Smiteless.exe")}"'
+    repo = os.path.dirname(HERE)
     ahk = os.path.expanduser(r"~/AppData/Local/Programs/AutoHotkey/v2/AutoHotkey64.exe")
-    ahk_script = os.path.join(HERE, "smiteless.ahk")
+    ahk_script = os.path.join(repo, "smiteless.ahk")
     if os.path.exists(ahk) and os.path.exists(ahk_script):
         return f'"{ahk}" "{ahk_script}"'
     pyw = sys.executable
     cand = os.path.join(os.path.dirname(pyw), "pythonw.exe")
     if os.path.exists(cand):
         pyw = cand
-    return f'"{pyw}" "{os.path.join(HERE, "smiteless_tray.py")}"'
+    return f'"{pyw}" "{os.path.join(repo, "tools", "smiteless_tray.py")}"'
 
 
 def autostart_enabled():
