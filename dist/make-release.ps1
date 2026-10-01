@@ -1,4 +1,5 @@
-# Cut a new Smiteless release so your brother's copy can update itself.
+# Cut a new Smiteless release on THIS repo (gh resolves it from the `origin` remote). Installed
+# copies only see it if tools\smiteupdate.py REPO and dist\tray.ahk UPDATE_REPO name this repo.
 #
 #   powershell -ExecutionPolicy Bypass -File dist\make-release.ps1 -Version 1.1.0 [-Notes "what changed"]
 #
@@ -46,7 +47,7 @@ if (-not $env:GH_TOKEN -and -not $env:GITHUB_TOKEN) {
         }
     } finally { try { [IO.File]::Delete($tmp) } catch {} }
 }
-gh release create "v$ver" $setup --repo bobbyroylee/smiteless --title "Smiteless v$ver" --notes $Notes
-if ($LASTEXITCODE -ne 0) { throw "gh release create failed - v$ver is pushed but NOT published, so the in-app updater will not offer it. Fix auth and re-run: gh release create v$ver `"$setup`" --repo bobbyroylee/smiteless --title `"Smiteless v$ver`" --notes `"$Notes`"" }
+gh release create "v$ver" $setup --title "Smiteless v$ver" --notes $Notes
+if ($LASTEXITCODE -ne 0) { throw "gh release create failed - v$ver is pushed but NOT published, so the in-app updater will not offer it. Fix auth and re-run: gh release create v$ver `"$setup`" --title `"Smiteless v$ver`" --notes `"$Notes`"" }
 
 Write-Host "`nReleased v$ver. Installed copies will offer the update on next launch." -ForegroundColor Green

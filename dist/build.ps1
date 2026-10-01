@@ -33,7 +33,7 @@ Remove-Item -Recurse -Force $build -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force $stage | Out-Null
 
 Write-Host "==> freeze Python app (PyInstaller)" -ForegroundColor Cyan
-$hidden = @("smiteoverlay","smitewidget","smitedead","smiteload","smitequeue","smitesettings","smiteprofile","phasecheck","smiteupdate","smitestats","smitekeycheck","selftest",
+$hidden = @("smiteoverlay","smitewidget","smitedead","smiteload","smitequeue","smitesettings","smiteprofile","phasecheck","smiteupdate","smitekeycheck","selftest",
             "loldead","lolload","loltags","lolqueue","lolmute","lolreentry","lolbleed","lolclose","lolgold","lolward","lolout","lolfix","lolpool","lolfit","lolrunes",
             "smitecard","smiteconfig","lolbuild","lolgame","lolscout","lolmatchup","lolitems",
             "lollive","lolvision","lolprofile","lolaccounts","lolcreds","claudecli",

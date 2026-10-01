@@ -20,6 +20,9 @@ NOAUTO := EnvGet("USERPROFILE") "\.claude\smiteless_noautoopen"   ; present = au
 NOHOME := EnvGet("USERPROFILE") "\.claude\smiteless_nohomeonstart" ; present = open profile/home at startup OFF
 UPDATED_MARK := A_ScriptDir "\.updated_version"
 SETTINGS := EnvGet("USERPROFILE") "\.claude\smiteless_settings.json"   ; read to gate auto-accept
+; GitHub repo ("owner/name") whose Releases this copy updates from. EMPTY = updates OFF:
+; nothing is checked, downloaded or run. Must match REPO in tools\smiteupdate.py.
+UPDATE_REPO := ""
 
 if FileExist(ICO)
     TraySetIcon(ICO)
@@ -35,7 +38,6 @@ tray.Add("Riot login", loginMenu)
 tray.Add("Settings", (*) => Launch("settings"))
 tray.Add()
 tray.Add("Auto-open at champ select", ToggleAuto)
-tray.Add("Usage stats", (*) => Launch("stats"))
 tray.Add("Patch notes", (*) => Launch("notes"))
 tray.Add("Check for updates", (*) => Launch("update --force"))
 tray.Add()
@@ -126,8 +128,10 @@ OpenHomeOnStartup() {
 }
 
 AutoUpdateOnLaunch() {
-    global APP
-    ; Always attempt background update apply on startup. If already current/offline, it exits quietly.
+    global APP, UPDATE_REPO
+    if (UPDATE_REPO = "")
+        return                                     ; updates off -> never download or run anything
+    ; Background update apply on startup. If already current/offline, it exits quietly.
     Run('"' APP '" update --apply', , "Hide")
 }
 
@@ -138,11 +142,13 @@ AutoUpdateOnLaunch() {
 g_updateVer := ""
 g_updLabel := "Check for updates"
 CheckUpdate() {
-    global g_updateVer, g_updLabel
+    global g_updateVer, g_updLabel, UPDATE_REPO
+    if (UPDATE_REPO = "")
+        return                                     ; updates off
     tag := ""
     try {
         req := ComObject("WinHttp.WinHttpRequest.5.1")
-        req.Open("GET", "https://api.github.com/repos/bobbyroylee/smiteless/releases/latest", false)
+        req.Open("GET", "https://api.github.com/repos/" UPDATE_REPO "/releases/latest", false)
         req.SetRequestHeader("User-Agent", "Smiteless-Tray")
         req.SetRequestHeader("Accept", "application/vnd.github+json")
         req.SetTimeouts(4000, 4000, 4000, 4000)

@@ -99,9 +99,6 @@ def main():
     elif cmd == "logins":
         import lolcreds
         lolcreds.main(rest)
-    elif cmd == "stats":
-        import smitestats
-        smitestats.main()
     elif cmd == "keycheck":
         import smitekeycheck
         smitekeycheck.main()

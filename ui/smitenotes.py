@@ -2,9 +2,10 @@
 """smitenotes.py - the Patch Notes / What's New window.
 
 Renders CHANGELOG.md in a scrollable, read-only window. It reads the copy bundled with the
-install (staged next to VERSION, so it matches the version you're running) and, in the
-background, tries to pull the latest CHANGELOG.md from GitHub so you can see notes for a
-release you haven't installed yet. Opened from the tray ("Patch notes") or:
+install (staged next to VERSION, so it matches the version you're running) and, when a
+release repo is configured (smiteupdate.REPO), tries to pull the latest CHANGELOG.md from it
+in the background so you can see notes for a release you haven't installed yet. Opened from
+the tray ("Patch notes") or:
 
     SmitelessApp.exe notes      (frozen)   /   python ui/smitenotes.py   (dev)
 """
@@ -31,7 +32,6 @@ import smiteskin as skin
 VOID, SURFACE, LINE = skin.VOID, skin.SURFACE, skin.LINE
 TXT, MUTED, INFO, EMBER = skin.TXT, skin.MUTED, skin.INFO, skin.EMBER
 BODY = skin.BODY
-RAW_URL = "https://raw.githubusercontent.com/bobbyroylee/smiteless/main/CHANGELOG.md"
 _k32 = ctypes.windll.kernel32
 
 
@@ -60,9 +60,22 @@ def _local_changelog():
     return "# Smiteless — Patch Notes\n\n(no patch notes found)"
 
 
-def _fetch_remote():
+def _raw_url():
+    """CHANGELOG.md on the release repo's main branch, or '' when no repo is configured."""
     try:
-        req = urllib.request.Request(RAW_URL, headers={"User-Agent": "Smiteless-Notes"})
+        import smiteupdate
+        repo = smiteupdate.REPO
+    except Exception:
+        repo = ""
+    return f"https://raw.githubusercontent.com/{repo}/main/CHANGELOG.md" if repo else ""
+
+
+def _fetch_remote():
+    url = _raw_url()
+    if not url:
+        return None
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "Smiteless-Notes"})
         with urllib.request.urlopen(req, timeout=6, context=ssl.create_default_context()) as r:
             return r.read().decode("utf-8")
     except Exception:

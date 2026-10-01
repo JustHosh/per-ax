@@ -6,6 +6,8 @@ a newer version than the local VERSION file; if there is one, it shows a small w
 an Update button. Clicking Update downloads that release's SmitelessSetup.exe and runs it
 (the installer closes the running app, lays the new files down, and relaunches). If we're
 up to date or offline, it exits silently.
+
+Updates are OFF while REPO is empty: nothing is checked, downloaded or run.
 """
 import os
 import sys
@@ -15,8 +17,13 @@ import tempfile
 import subprocess
 import urllib.request
 
-REPO = "bobbyroylee/smiteless"
-API = f"https://api.github.com/repos/{REPO}/releases/latest"
+# The GitHub repo ("owner/name") whose Releases this copy updates from. EMPTY = updates OFF.
+# Only ever point it at a repo you control and that publishes releases with a
+# SmitelessSetup.exe asset: the updater downloads and RUNS whatever installer that repo's
+# latest release carries. dist/tray.ahk spells the same value out as UPDATE_REPO - keep the
+# two in sync.
+REPO = ""
+API = f"https://api.github.com/repos/{REPO}/releases/latest" if REPO else ""
 UA = "Smiteless-Updater"
 
 # Duskfall skin, guarded: the updater must never die over cosmetics. Frozen builds bundle
@@ -68,7 +75,9 @@ def _vtuple(s):
 
 
 def latest_release():
-    """(tag, setup_download_url) for the newest release, or None."""
+    """(tag, setup_download_url) for the newest release, or None (also when updates are off)."""
+    if not REPO:
+        return None
     try:
         ctx = ssl.create_default_context()
         req = urllib.request.Request(API, headers={"User-Agent": UA,
@@ -263,6 +272,11 @@ def main(args=None):
             pass
         return
     force = "--force" in args                     # manual "Check for updates" -> always give feedback
+    if not REPO:
+        if force:
+            _info("Automatic updates are turned off in this build (no release repo is "
+                  "configured). Update by pulling the source or installing a new build.")
+        return
     cur = local_version()
     rel = latest_release()
     if not rel:
