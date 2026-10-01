@@ -18,6 +18,8 @@ import subprocess
 import urllib.request
 
 # The GitHub repo ("owner/name") whose Releases this copy updates from. EMPTY = updates OFF.
+# For this app that is "JustHosh/per-ax" - once it publishes releases AND is public (the
+# Releases API is read without auth, so a private repo's releases are invisible here).
 # Only ever point it at a repo you control and that publishes releases with a
 # PerAxSetup.exe asset: the updater downloads and RUNS whatever installer that repo's
 # latest release carries. dist/tray.ahk spells the same value out as UPDATE_REPO - keep the

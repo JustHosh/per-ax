@@ -58,6 +58,8 @@ información mostrada, sin desenmascarar jugadores).
 Requisitos: Windows 10/11, Python 3.11+ y League en modo **Sin bordes** (Borderless).
 
 ```
+git clone https://github.com/JustHosh/per-ax.git
+cd per-ax
 pip install -r requirements.txt
 python tools\selftest.py              # salud general: debe salir todo OK (los "skip" son opcionales)
 python perax_main.py settings     # ajustes
@@ -125,9 +127,11 @@ Todo vive en `%APPDATA%\Per-Ax`: `settings.json`, tu historial (behavior ledger 
 
 ## Actualizaciones
 
-Apagadas. Cuando publiquemos releases propios, pon `owner/repo` en `REPO`
-(`tools/smiteupdate.py`) y en `UPDATE_REPO` (`dist/tray.ahk`). Nunca los apuntes a un repo que
-no controles: el updater descarga y ejecuta el instalador del último release.
+Apagadas. Cuando publiquemos releases propios, pon `JustHosh/per-ax` en `REPO`
+(`tools/smiteupdate.py`) y en `UPDATE_REPO` (`dist/tray.ahk`). El repo tiene que ser
+**público**: el updater lee los releases sin iniciar sesión, y con el repo privado no los ve.
+Nunca los apuntes a un repo que no controles: el updater descarga y ejecuta el instalador del
+último release.
 
 ## Traer arreglos del original
 

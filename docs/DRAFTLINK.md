@@ -69,7 +69,8 @@ of your own hosted copy of the page.
 
 The page itself is [`docs/draft/index.html`](draft/index.html), served by GitHub Pages from
 YOUR repo: **Settings → Pages → Deploy from a branch → `main` / `docs`**. Its URL is
-`https://<user>.github.io/<repo>/draft/`.
+`https://<user>.github.io/<repo>/draft/` — for this app, `https://justhosh.github.io/per-ax/draft/`.
+GitHub Pages needs the repo to be public (or a paid plan for a private one).
 
 ### 3. Paste both into Per-Ax
 

@@ -21,7 +21,8 @@ NOAUTO := DATADIR "\noautoopen"                          ; present = auto-open O
 NOHOME := DATADIR "\nohomeonstart"                       ; present = open profile/home at startup OFF
 UPDATED_MARK := A_ScriptDir "\.updated_version"
 ; GitHub repo ("owner/name") whose Releases this copy updates from. EMPTY = updates OFF:
-; nothing is checked, downloaded or run. Must match REPO in tools\smiteupdate.py.
+; nothing is checked, downloaded or run. Must match REPO in tools\smiteupdate.py
+; ("JustHosh/per-ax" once it publishes releases and is public).
 UPDATE_REPO := ""
 
 if FileExist(ICO)
