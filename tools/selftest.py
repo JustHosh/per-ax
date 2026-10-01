@@ -962,6 +962,38 @@ def c_jungle():
     return OK, "kill feed + death timer only; CS ticks change nothing"
 
 
+def c_anon():
+    """Champ-select scouting may only use the teammates the client SHOWS: a name hidden by
+    ranked's anonymous champ select must never be looked up (revealing anonymized players is
+    against Riot's policy), and enemies are never in reach. Drives champselect_allies with a
+    fake session, and bans the chat-participants side door that used to leak hidden names."""
+    import lolgame as lg
+    session = {"myTeam": [
+        {"cellId": 0, "gameName": "Shown", "tagLine": "LAN", "nameVisibilityType": "VISIBLE"},
+        {"cellId": 1, "gameName": "Hidden", "tagLine": "LAN", "nameVisibilityType": "HIDDEN"},
+        {"cellId": 2, "gameName": "", "tagLine": "", "nameVisibilityType": "HIDDEN"},
+        {"cellId": 3, "gameName": "OldClient", "tagLine": "LAN"}],
+        "theirTeam": [{"cellId": 5, "gameName": "Enemy", "tagLine": "LAN"}]}
+    real_lcu, real_http = lg._lcu, lg.lb.http
+    lg._lcu = lambda: ("1", {})
+    lg.lb.http = lambda *a, **k: session
+    try:
+        got = lg.champselect_allies()
+    finally:
+        lg._lcu, lg.lb.http = real_lcu, real_http
+    if got != ["Shown#LAN", "OldClient#LAN"]:
+        return FAIL, f"champ-select roster read wrong: {got} (hidden or enemy names leaked?)"
+    leaks = []
+    for d in ("core", "ui", "tools"):
+        folder = os.path.join(_ROOT, d)
+        for f in sorted(os.listdir(folder)):
+            if f.endswith(".py") and f != "selftest.py" and                     "chat/v5/participants" in open(os.path.join(folder, f), encoding="utf-8").read():
+                leaks.append(f"{d}/{f}")
+    if leaks:
+        return FAIL, "chat-participants lookup is back (leaks hidden names): " + ", ".join(leaks)
+    return OK, "only names the client shows; hidden teammates and enemies never looked up"
+
+
 def c_quiet():
     """IN-GAME QUIET writes League's own chat/ping settings over the LCU and reads them back.
     It used to also TYPE `/fullmute all` into the game with synthetic keystrokes; that input
@@ -1150,6 +1182,7 @@ def main():
         ("THE POOL (champions in LP)", c_pool),
         ("Frozen build (hidden imports)", c_frozen),
         ("Jungle tracker (shown info only)", c_jungle),
+        ("Champ-select scout (no unmasking)", c_anon),
         ("In-game quiet (settings only)", c_quiet),
         ("No input injection (reads only)", c_noinput),
         ("Personal fit (your results)", c_fit),

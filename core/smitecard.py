@@ -3472,7 +3472,8 @@ def run(emit, count=None, wait=False, stop=None, monitor=False):
                                         settings.get("max_elo_backup")) if nm2]
                     pool = [c for c in pool if c]
                 # ALLY SCOUT while you can still dodge: teammate Riot IDs come from the
-                # Riot Client chat participants (allies only — enemies are anonymized).
+                # champ-select roster, and only the names the client itself shows you (a
+                # hidden/anonymized teammate is never looked up; enemies never are).
                 # One background pass per champ select; flags tilted / F-grade teammates.
                 if team_read["state"] == "idle":
                     team_read["state"] = "busy"

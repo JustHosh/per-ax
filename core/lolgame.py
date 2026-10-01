@@ -106,23 +106,31 @@ def my_mastery_points(ttl=300):
 
 
 def champselect_allies():
-    """Riot IDs of your TEAMMATES in the current champ select, via the Riot Client's chat
-    participants endpoint (the Porofessor method): ['Name#TAG', ...]. [] outside champ
-    select / on any failure. Enemies are anonymized by Riot — allies only."""
+    """Riot IDs of the TEAMMATES the client itself shows you in the current champ select:
+    ['Name#TAG', ...]. Read from the champ-select session's own roster (gameName/tagLine), and
+    a member whose name the client hides (nameVisibilityType HIDDEN — ranked's anonymous
+    champ select) is skipped, so this can never reveal a player the game anonymized. Enemies
+    are never in this roster. [] outside champ select / on any failure.
+
+    (It used to read the Riot Client's chat-participants endpoint, which hands out names the
+    champ-select UI is hiding. Revealing anonymized players is against Riot's policy.)"""
+    lc = _lcu()
+    if not lc:
+        return []
+    port, hdr = lc
     try:
-        lf = os.path.expandvars(r"%LOCALAPPDATA%\Riot Games\Riot Client\Config\lockfile")
-        _n, _p, port, pw, _proto = open(lf).read().split(":")
-        out = lb.http(f"https://127.0.0.1:{port}/chat/v5/participants",
-                      headers={"Authorization": "Basic " +
-                               __import__("base64").b64encode(f"riot:{pw}".encode()).decode()},
-                      timeout=4, insecure=True)
-        rids = []
-        for p in (out.get("participants") or []):
-            if "champ-select" in (p.get("cid") or "") and p.get("game_name"):
-                rids.append(f"{p['game_name']}#{p.get('game_tag', '')}")
-        return rids
+        s = lb.http(f"https://127.0.0.1:{port}/lol-champ-select/v1/session",
+                    headers=hdr, timeout=4, insecure=True)
     except Exception:
         return []
+    rids = []
+    for m in ((s or {}).get("myTeam") or []):
+        if str(m.get("nameVisibilityType") or "").upper() == "HIDDEN":
+            continue
+        gn, tl = (m.get("gameName") or "").strip(), (m.get("tagLine") or "").strip()
+        if gn and tl:
+            rids.append(f"{gn}#{tl}")
+    return rids
 
 
 def save_role(cid, pos):
